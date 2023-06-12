@@ -12,6 +12,7 @@ int main() {
      ++charFrequencies[c];
   }
 
+  // Print the horizontal bars based on char frequencies
   for (int i = 0; i < 128; i++) {
     printf("%c: ", i);
     for (int j = 0; j < charFrequencies[i]; j++) {
