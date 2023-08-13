@@ -1,3 +1,3 @@
-module example.com/hello
+module ch1
 
 go 1.18
