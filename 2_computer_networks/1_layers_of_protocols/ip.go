@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"os"
 )
 
 type IPHeader struct {
@@ -15,8 +16,8 @@ type IPHeader struct {
 	DestinationIP [4]byte
 }
 
-func parseIPHeader(data []byte) (*IPHeader, error) {
-	buffer := make([]byte, 60)
+func parseIPHeader(file *os.File) (*IPHeader, error) {
+	buffer := make([]byte, IPHeaderMaxSize)
 	n, err := file.Read(buffer)
 	if err != nil && err != io.EOF {
 		return nil, fmt.Errorf("Error reading IP header: %v", err)
@@ -27,12 +28,12 @@ func parseIPHeader(data []byte) (*IPHeader, error) {
 	}
 
 	header := &IPHeader{
-		Version:       data[0] >> 4,
-		IHL:           data[0] & 0x0F,
-		TotalLength:   binary.BigEndian.Uint16(data[2:4]),
-		Protocol:      data[9],
-		SourceIP:      [4]byte{data[12], data[13], data[14], data[15]},
-		DestinationIP: [4]byte{data[16], data[17], data[18], data[19]},
+		Version:       buffer[0] >> 4,
+		IHL:           buffer[0] & 0x0F,
+		TotalLength:   binary.BigEndian.Uint16(buffer[2:4]),
+		Protocol:      buffer[9],
+		SourceIP:      [4]byte{buffer[12], buffer[13], buffer[14], buffer[15]},
+		DestinationIP: [4]byte{buffer[16], buffer[17], buffer[18], buffer[19]},
 	}
 
 	return header, nil
