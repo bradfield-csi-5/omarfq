@@ -1,55 +1,51 @@
 package main
 
 import (
-	"log"
-	"syscall"
+	"fmt"
+	"net"
 )
 
 func main() {
-	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
+	address := "localhost:8080"
+	ln, err := net.Listen("tcp", address)
+
 	if err != nil {
-		log.Fatalf("Failed to create socket: %v", err)
-	}
-	defer syscall.Close(fd)
-
-	addr := &syscall.SockaddrInet4{
-		Port: 8080,
-		Addr: [4]byte{0, 0, 0, 0}, // 0.0.0.0
-	}
-	if err := syscall.Bind(fd, addr); err != nil {
-		log.Fatalf("Failed to bind: %v", err)
+		panic(err)
 	}
 
-	if err := syscall.Listen(fd, 10); err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+	defer ln.Close()
+
+	host, port, err := net.SplitHostPort(ln.Addr().String())
+	if err != nil {
+		panic(err)
 	}
+	fmt.Printf("Listening on host: %s, port: %s\n", host, port)
 
 	for {
-		connFd, _, err := syscall.Accept(fd)
+		conn, err := ln.Accept()
 		if err != nil {
-			log.Printf("Failed to accept connection: %v", err)
-			continue
+			panic(err)
 		}
+		go func(conn net.Conn) {
+			buf := make([]byte, 1024)
 
-		go handleConnection(connFd)
-	}
-}
+			for {
+				len, err := conn.Read(buf)
+				if err != nil {
+					fmt.Printf("Error reading: %#v\n", err)
+					break
+				}
 
-func handleConnection(fd int) {
-	defer syscall.Close(fd)
-	buf := make([]byte, 1024)
+				// Need to check but conn.Read() returns index
+				// at which the data starts on the TCP connection
+				// buffer
+				s := string(buf[:len])
+				fmt.Printf("Message received: %s\n", s)
 
-	for {
-		n, err := syscall.Read(fd, buf)
-		if err != nil || n == 0 {
-			log.Printf("Failed to read or connection closed: %v", err)
-			return
-		}
+				conn.Write([]byte("Message received.\n"))
+			}
 
-		_, err = syscall.Write(fd, buf[:n])
-		if err != nil {
-			log.Printf("Failed to write: %v", err)
-			return
-		}
+			conn.Close()
+		}(conn)
 	}
 }
