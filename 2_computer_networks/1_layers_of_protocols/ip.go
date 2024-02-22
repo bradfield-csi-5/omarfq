@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/binary"
-	"fmt"
-	"io"
 	"os"
 )
 
@@ -14,27 +12,38 @@ type IPHeader struct {
 	Protocol      uint8
 	SourceIP      [4]byte
 	DestinationIP [4]byte
+	PayloadLength int
 }
 
-func parseIPHeader(file *os.File) (*IPHeader, error) {
-	buffer := make([]byte, IPHeaderMaxSize)
-	n, err := file.Read(buffer)
-	if err != nil && err != io.EOF {
-		return nil, fmt.Errorf("Error reading IP header: %v", err)
+const (
+	TCPProtocol = 0x06
+	UDPProtocol = 0x11
+)
+
+func readIPHeader(file *os.File) (*IPHeader, error) {
+	headerData := make([]byte, 20) // Minimum IP header size
+	_, err := file.Read(headerData)
+	if err != nil {
+		return nil, err
 	}
 
-	if n < 20 {
-		return nil, fmt.Errorf("Data too small to be an IP header")
-	}
+	// Extract fields from the IP header
+	versionAndIHL := headerData[0]
+	version := versionAndIHL >> 4
+	ihl := uint8(versionAndIHL & 0x0F)
+	totalLength := binary.BigEndian.Uint16(headerData[2:4])
+	protocol := headerData[9]
+	sourceIP := [4]byte{headerData[12], headerData[13], headerData[14], headerData[15]}
+	destIP := [4]byte{headerData[16], headerData[17], headerData[18], headerData[19]}
+	payloadLength := int(totalLength) - int(ihl*4)
 
-	header := &IPHeader{
-		Version:       buffer[0] >> 4,
-		IHL:           buffer[0] & 0x0F,
-		TotalLength:   binary.BigEndian.Uint16(buffer[2:4]),
-		Protocol:      buffer[9],
-		SourceIP:      [4]byte{buffer[12], buffer[13], buffer[14], buffer[15]},
-		DestinationIP: [4]byte{buffer[16], buffer[17], buffer[18], buffer[19]},
-	}
-
-	return header, nil
+	return &IPHeader{
+		Version:       version,
+		IHL:           ihl,
+		TotalLength:   totalLength,
+		Protocol:      protocol,
+		SourceIP:      sourceIP,
+		DestinationIP: destIP,
+		PayloadLength: payloadLength,
+	}, nil
 }

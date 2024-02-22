@@ -9,5 +9,4 @@ const (
 	GlobalHeaderSize    = 24
 	PerPacketHeaderSize = 16
 	EthernetHeaderSize  = 14
-	IPHeaderMaxSize     = 60
 )

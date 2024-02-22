@@ -21,13 +21,15 @@ func main() {
 		return
 	}
 
+	packetCount := 0
+
 	for {
 		pHeader, err := readPacketHeader(file)
 		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
-			fmt.Println("Error reading packet header:", err)
+			fmt.Println("Error reading Packet header:", err)
 			return
 		}
 
@@ -37,20 +39,48 @@ func main() {
 			return
 		}
 
-		ipHeader, err := parseIPHeader(file)
+		ipHeader, err := readIPHeader(file)
+		if err != nil {
+			fmt.Println("Error reading IP header:", err)
+			return
+		}
 
-		printPacketInfo(pHeader, eHeader, ipHeader)
+		var tcpHeader *TCPHeader
 
-		remainingPacketData := pHeader.CapturedLen
-		remainingPacketData -= EthernetHeaderSize
-		remainingPacketData -= IPHeaderMaxSize
+		if ipHeader.Protocol == 6 { // 6 indicates TCP
+			tcpHeaderRes, tcpData, err := parseTCPHeader(file)
+			tcpHeader = tcpHeaderRes
+			if err != nil {
+				fmt.Println("Error parsing TCP header:", err)
+				return
+			}
+			fmt.Println("Processing TCP packet...")
+			httpData := tcpData[tcpHeader.HeaderLength:]
+			addTCPData(tcpHeader.SequenceNumber, httpData)
+		}
+
+		printPacketInfo(pHeader, eHeader, ipHeader, tcpHeader)
 
 		// Skip remaining packet data
-		file.Seek(int64(remainingPacketData), 1)
+		remainingData := int64(pHeader.CapturedLen) - EthernetHeaderSize - int64(ipHeader.IHL*4) - int64(tcpHeader.HeaderLength)
+
+		_, err = file.Seek(remainingData, 1)
+		if err != nil {
+			fmt.Println("Error while skipping remaining data:", err)
+			return
+		}
+		packetCount += 1
 	}
+
+	fmt.Printf("DataList length before combining: %d\n", len(dataList))
+	combinedData := getCombinedTCPData()
+
+	extractAndSaveHTTP(combinedData)
+
+	fmt.Printf("Number of packets: %d\n", packetCount)
 }
 
-func printPacketInfo(pHeader *PacketHeader, eHeader *EthernetHeader, ipHeader *IPHeader) {
+func printPacketInfo(pHeader *PacketHeader, eHeader *EthernetHeader, ipHeader *IPHeader, tcpHeader *TCPHeader) {
 	// Packet Header Info
 	fmt.Printf("Captured Length: %d, Original Length: %d\n", pHeader.CapturedLen, pHeader.OriginalLen)
 
@@ -70,10 +100,16 @@ func printPacketInfo(pHeader *PacketHeader, eHeader *EthernetHeader, ipHeader *I
 	fmt.Printf("Source IP: %v.%v.%v.%v\n", ipHeader.SourceIP[0], ipHeader.SourceIP[1], ipHeader.SourceIP[2], ipHeader.SourceIP[3])
 	fmt.Printf("Destination IP: %v.%v.%v.%v\n", ipHeader.DestinationIP[0], ipHeader.DestinationIP[1], ipHeader.DestinationIP[2], ipHeader.DestinationIP[3])
 	fmt.Printf("Protocol: %v\n", ipHeader.Protocol)
-
 	// Compute payload length by subtracting header length from total length
 	payloadLength := ipHeader.TotalLength - (uint16(ipHeader.IHL) * 4)
 	fmt.Printf("Payload Length: %d bytes\n", payloadLength)
+
+	// TCP Header Info
+	if tcpHeader != nil {
+		fmt.Printf("Source Port: %d\n", tcpHeader.SourcePort)
+		fmt.Printf("Destination Port: %d\n", tcpHeader.DestinationPort)
+		fmt.Printf("Sequence Number: %d\n", tcpHeader.SequenceNumber)
+	}
 
 	fmt.Println("========================")
 }
