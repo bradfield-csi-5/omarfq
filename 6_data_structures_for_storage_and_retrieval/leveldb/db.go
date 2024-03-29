@@ -29,17 +29,17 @@ type DB interface {
 	RangeScan(start, limit []byte) (iterator.Iterator, error)
 }
 
-type entry struct {
-	key   []byte
-	value []byte
+type Entry struct {
+	Key   []byte
+	Value []byte
 }
 
 type LevelDb struct {
-	entries []entry
+	entries []Entry
 }
 
 func NewLevelDb() *LevelDb {
-	entries := make([]entry, 0)
+	entries := make([]Entry, 0)
 
 	return &LevelDb{
 		entries: entries,
@@ -47,40 +47,40 @@ func NewLevelDb() *LevelDb {
 }
 
 func (ldb *LevelDb) Get(key []byte) ([]byte, error) {
-	idx, found := slices.BinarySearchFunc(ldb.entries, key, func(entry entry, target []byte) int {
-		return bytes.Compare(entry.key, target)
+	idx, found := slices.BinarySearchFunc(ldb.entries, key, func(entry Entry, target []byte) int {
+		return bytes.Compare(entry.Key, target)
 	})
 
 	if found {
-		return ldb.entries[idx].value, nil
+		return ldb.entries[idx].Value, nil
 	}
 
 	return nil, errors.New("Key not found")
 }
 
 func (ldb *LevelDb) Has(key []byte) (bool, error) {
-	_, found := slices.BinarySearchFunc(ldb.entries, key, func(entry entry, target []byte) int {
-		return bytes.Compare(entry.key, target)
+	_, found := slices.BinarySearchFunc(ldb.entries, key, func(entry Entry, target []byte) int {
+		return bytes.Compare(entry.Key, target)
 	})
 
 	return found, nil
 }
 
 func (ldb *LevelDb) Put(key, value []byte) error {
-	idx, found := slices.BinarySearchFunc(ldb.entries, key, func(entry entry, target []byte) int {
-		return bytes.Compare(entry.key, target)
+	idx, found := slices.BinarySearchFunc(ldb.entries, key, func(entry Entry, target []byte) int {
+		return bytes.Compare(entry.Key, target)
 	})
 
-	newEntry := entry{key, value}
+	newEntry := Entry{key, value}
 
 	if found {
-		ldb.entries[idx].value = value
+		ldb.entries[idx].Value = value
 	} else {
 		ldb.entries = append(ldb.entries, newEntry)
 	}
 
-	slices.SortFunc(ldb.entries, func(entry1, entry2 entry) int {
-		return bytes.Compare(entry1.key, entry2.key)
+	slices.SortFunc(ldb.entries, func(entry1, entry2 Entry) int {
+		return bytes.Compare(entry1.Key, entry2.Key)
 	})
 
 	return nil
@@ -88,24 +88,24 @@ func (ldb *LevelDb) Put(key, value []byte) error {
 }
 
 func (ldb *LevelDb) Delete(key []byte) error {
-	idx, found := slices.BinarySearchFunc(ldb.entries, key, func(entry entry, target []byte) int {
-		return bytes.Compare(entry.key, target)
+	idx, found := slices.BinarySearchFunc(ldb.entries, key, func(entry Entry, target []byte) int {
+		return bytes.Compare(entry.Key, target)
 	})
 
 	if found {
 		ldb.entries = append(ldb.entries[0:idx], ldb.entries[idx+1:]...)
 	}
 
-	return errors.New("Could not delete entry. Provided key not found")
+	return errors.New("Could not delete Entry. Provided key not found")
 }
 
 func (ldb *LevelDb) RangeScan(start, end []byte) (iterator.Iterator, error) {
-	idxStart, foundStart := slices.BinarySearchFunc(ldb.entries, start, func(entry entry, target []byte) int {
-		return bytes.Compare(entry.key, target)
+	idxStart, foundStart := slices.BinarySearchFunc(ldb.entries, start, func(entry Entry, target []byte) int {
+		return bytes.Compare(entry.Key, target)
 	})
 
-	idxEnd, foundEnd := slices.BinarySearchFunc(ldb.entries, end, func(entry entry, target []byte) int {
-		return bytes.Compare(entry.key, target)
+	idxEnd, foundEnd := slices.BinarySearchFunc(ldb.entries, end, func(entry Entry, target []byte) int {
+		return bytes.Compare(entry.Key, target)
 	})
 
 	if !foundStart || !foundEnd {
@@ -113,12 +113,12 @@ func (ldb *LevelDb) RangeScan(start, end []byte) (iterator.Iterator, error) {
 	}
 
 	newIterator := iterator.NewIter()
-	rangeSlice := ldb.entries[idxStart : idxEnd+1]
+	rangeSlice := ldb.entries[idxStart : idxEnd+2] // +2 to include the last range Entry in the Iterator
 
-	for _, entry := range rangeSlice {
+	for _, Entry := range rangeSlice {
 		newTuple := iterator.Tuple{
-			Key:   entry.key,
-			Value: entry.value,
+			Key:   Entry.Key,
+			Value: Entry.Value,
 		}
 		newIterator.Tuples = append(newIterator.Tuples, newTuple)
 	}
