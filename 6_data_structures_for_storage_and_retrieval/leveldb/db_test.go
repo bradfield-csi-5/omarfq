@@ -1,9 +1,10 @@
 package leveldb
 
 import (
+	//"bytes"
 	"database/sql"
 	"encoding/binary"
-	"fmt"
+	//"fmt"
 	"testing"
 
 	_ "github.com/lib/pq"
@@ -168,7 +169,7 @@ func Benchmark_InMemoryLevelDbPut(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		//var dbRecords entries
 
-		rows, err := db.Query("SELECT id, title FROM movies limit 3")
+		rows, err := db.Query("SELECT id, title FROM movies")
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -193,8 +194,17 @@ func Benchmark_InMemoryLevelDbPut(b *testing.B) {
 		rows.Close()
 	}
 
-	it, _ := leveldb.Dump()
-	for it.Next() {
-		fmt.Printf("Key: %v, Value: %v\n", string(it.Key()), string(it.Value()))
-	}
+	//it, _ := leveldb.Dump()
+	//for it.Next() {
+	//	var keyInt int64
+	//	keyBytes := it.Key()
+
+	//	err := binary.Read(bytes.NewReader(keyBytes), binary.BigEndian, &keyInt)
+	//	if err != nil {
+	//		fmt.Println("Error converting key bytes to int:", err)
+	//		continue
+	//	}
+
+	//	fmt.Printf("Key: %d, Value: %s\n", keyInt, string(it.Value()))
+	//}
 }
