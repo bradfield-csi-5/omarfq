@@ -94,6 +94,7 @@ func (ldb *LevelDb) Delete(key []byte) error {
 
 	if found {
 		ldb.entries = append(ldb.entries[0:idx], ldb.entries[idx+1:]...)
+		return nil
 	}
 
 	return errors.New("Could not delete Entry. Provided key not found")
@@ -113,7 +114,7 @@ func (ldb *LevelDb) RangeScan(start, end []byte) (iterator.Iterator, error) {
 	}
 
 	newIterator := iterator.NewIter()
-	rangeSlice := ldb.entries[idxStart : idxEnd+2] // +2 to include the last range Entry in the Iterator
+	rangeSlice := ldb.entries[idxStart : idxEnd+1] // +2 to include the last range Entry in the Iterator
 
 	for _, Entry := range rangeSlice {
 		newTuple := iterator.Tuple{

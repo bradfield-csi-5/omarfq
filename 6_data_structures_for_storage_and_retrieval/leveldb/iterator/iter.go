@@ -34,7 +34,9 @@ func NewIter() *Iter {
 }
 
 func (it *Iter) Next() bool {
-	it.CurrIdx++
+	if it.CurrIdx < len(it.Tuples) {
+		it.CurrIdx++
+	}
 	return it.CurrIdx < len(it.Tuples)
 }
 

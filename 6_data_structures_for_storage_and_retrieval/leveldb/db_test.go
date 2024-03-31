@@ -2,7 +2,6 @@ package leveldb
 
 import (
 	"testing"
-	//"github.com/omarfq/leveldb/iterator"
 )
 
 func seedDb() DB {
@@ -16,14 +15,130 @@ func seedDb() DB {
 	}
 }
 
+func emptyLevelDb() DB {
+	return &LevelDb{
+		entries: make([]Entry, 0),
+	}
+}
+
 func TestLevelDb_Get_Ok(t *testing.T) {
 	leveldb := seedDb()
 
-	testValue := []byte("testvalue1")
+	testValue := "testvalue1"
 
 	val, _ := leveldb.Get([]byte("testkey1"))
-	if string(val) != string(testValue) {
+	if string(val) != testValue {
 		t.Errorf("Expected %q, got %q", testValue, val)
 	}
+}
 
+func TestLevelDb_Get_Error_When_Empty(t *testing.T) {
+	leveldb := emptyLevelDb()
+
+	val, err := leveldb.Get([]byte("foo"))
+
+	if err == nil || val != nil {
+		t.Error("Expected an error when calling Get() on empty DB")
+	}
+}
+
+func TestLevelDb_Put_Ok(t *testing.T) {
+	leveldb := emptyLevelDb()
+
+	testKey, testValue := []byte("key1"), []byte("value1")
+
+	leveldb.Put(testKey, testValue)
+
+	val, err := leveldb.Get(testKey)
+
+	if err != nil || val == nil {
+		t.Errorf("Expected %q, got %q", testValue, val)
+	}
+}
+
+func TestLevelDb_Has_True(t *testing.T) {
+	leveldb := seedDb()
+
+	if found, _ := leveldb.Has([]byte("testkey1")); !found {
+		t.Error("Expected the DB to find the test key")
+	}
+}
+
+func TestLevelDb_Has_False(t *testing.T) {
+	leveldb := seedDb()
+
+	if found, _ := leveldb.Has([]byte("testkey2")); found {
+		t.Error("Expected the DB to NOT find the test key")
+	}
+}
+
+func TestLevelDb_Delete_Ok(t *testing.T) {
+	leveldb := seedDb()
+
+	testKey := []byte("testkey1")
+
+	err := leveldb.Delete(testKey)
+
+	if err != nil {
+		t.Error("Expected Delete to remove the test key correctly")
+	}
+
+	val, err := leveldb.Get(testKey)
+	if val != nil || err == nil {
+		t.Error("Expected Delete to remove the given test key")
+	}
+}
+
+func TestLevelDb_Delete_Error(t *testing.T) {
+	leveldb := seedDb()
+
+	testKey := []byte("testkey2")
+
+	err := leveldb.Delete(testKey)
+	if err == nil {
+		t.Error("Expected Delete to error out because of non-existent key")
+	}
+}
+
+func TestLevelDb_RangeScan_Ok(t *testing.T) {
+	leveldb := seedDb()
+
+	data := []struct {
+		key   []byte
+		value []byte
+	}{
+		{[]byte("alpha"), []byte("Alpha")},
+		{[]byte("bravo"), []byte("Bravo")},
+		{[]byte("charlie"), []byte("Charlie")},
+		{[]byte("delta"), []byte("Delta")},
+		{[]byte("echo"), []byte("Echo")},
+		{[]byte("foxtrot"), []byte("Foxtrot")},
+	}
+
+	for _, entry := range data {
+		err := leveldb.Put(entry.key, entry.value)
+		if err != nil {
+			t.Fatalf("Failed to Put record with key %q in DB", entry.key)
+		}
+	}
+
+	it, _ := leveldb.RangeScan([]byte("bravo"), []byte("delta"))
+
+	expectedRangeScanResult := data[1:4]
+
+	type entry struct {
+		key   []byte
+		value []byte
+	}
+
+	type entries []entry
+
+	for _, val := range expectedRangeScanResult {
+		if it.Next() {
+			if string(it.Key()) != string(val.key) {
+				t.Errorf("Expected %q, got %q", string(val.key), string(it.Key()))
+			}
+
+		}
+	}
 }
