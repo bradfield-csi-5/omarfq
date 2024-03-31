@@ -1,7 +1,12 @@
 package leveldb
 
 import (
+	"database/sql"
+	"encoding/binary"
+	"fmt"
 	"testing"
+
+	_ "github.com/lib/pq"
 )
 
 func seedDb() DB {
@@ -19,6 +24,22 @@ func emptyLevelDb() DB {
 	return &LevelDb{
 		entries: make([]Entry, 0),
 	}
+}
+
+type entry struct {
+	Key   []byte
+	Value []byte
+}
+
+type entries []entry
+
+func setupDB() *sql.DB {
+	connStr := "postgres://omarflores@localhost:5432/bradfield?sslmode=disable"
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		panic(err)
+	}
+	return db
 }
 
 func TestLevelDb_Get_Ok(t *testing.T) {
@@ -126,13 +147,6 @@ func TestLevelDb_RangeScan_Ok(t *testing.T) {
 
 	expectedRangeScanResult := data[1:4]
 
-	type entry struct {
-		key   []byte
-		value []byte
-	}
-
-	type entries []entry
-
 	for _, val := range expectedRangeScanResult {
 		if it.Next() {
 			if string(it.Key()) != string(val.key) {
@@ -140,5 +154,47 @@ func TestLevelDb_RangeScan_Ok(t *testing.T) {
 			}
 
 		}
+	}
+}
+
+func Benchmark_InMemoryLevelDbPut(b *testing.B) {
+	db := setupDB()
+	defer db.Close()
+
+	leveldb := emptyLevelDb()
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		//var dbRecords entries
+
+		rows, err := db.Query("SELECT id, title FROM movies limit 3")
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		for rows.Next() {
+			var id int64
+			var title string
+			if err := rows.Scan(&id, &title); err != nil {
+				b.Fatal(err)
+			}
+
+			// Convert id to []byte
+			keyBuf := make([]byte, 8)
+			binary.BigEndian.PutUint64(keyBuf, uint64(id))
+
+			// Assuming title is already a string, convert it to []byte
+			valueBuf := []byte(title)
+
+			// Now you can call Put with both key and value as []byte
+			leveldb.Put(keyBuf, valueBuf)
+		}
+		rows.Close()
+	}
+
+	it, _ := leveldb.Dump()
+	for it.Next() {
+		fmt.Printf("Key: %v, Value: %v\n", string(it.Key()), string(it.Value()))
 	}
 }

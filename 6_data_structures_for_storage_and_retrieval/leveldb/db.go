@@ -27,6 +27,9 @@ type DB interface {
 	// RangeScan returns an Iterator (see below) for scanning through all
 	// key-value pairs in the given range, ordered by key ascending.
 	RangeScan(start, limit []byte) (iterator.Iterator, error)
+
+	// Dump returns all the records in the database in a readable format
+	Dump() (iterator.Iterator, error)
 }
 
 type Entry struct {
@@ -117,6 +120,20 @@ func (ldb *LevelDb) RangeScan(start, end []byte) (iterator.Iterator, error) {
 	rangeSlice := ldb.entries[idxStart : idxEnd+1] // +2 to include the last range Entry in the Iterator
 
 	for _, Entry := range rangeSlice {
+		newTuple := iterator.Tuple{
+			Key:   Entry.Key,
+			Value: Entry.Value,
+		}
+		newIterator.Tuples = append(newIterator.Tuples, newTuple)
+	}
+
+	return newIterator, nil
+}
+
+func (ldb *LevelDb) Dump() (iterator.Iterator, error) {
+	newIterator := iterator.NewIter()
+
+	for _, Entry := range ldb.entries {
 		newTuple := iterator.Tuple{
 			Key:   Entry.Key,
 			Value: Entry.Value,
