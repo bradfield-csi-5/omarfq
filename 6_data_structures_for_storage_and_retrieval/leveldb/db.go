@@ -41,14 +41,6 @@ type LevelDb struct {
 	entries []Entry
 }
 
-func NewLevelDb() *LevelDb {
-	entries := make([]Entry, 0)
-
-	return &LevelDb{
-		entries: entries,
-	}
-}
-
 func (ldb *LevelDb) Get(key []byte) ([]byte, error) {
 	idx, found := slices.BinarySearchFunc(ldb.entries, key, func(entry Entry, target []byte) int {
 		return bytes.Compare(entry.Key, target)
