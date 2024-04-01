@@ -1,4 +1,4 @@
-package leveldb
+package in_memory_leveldb
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 
 	"slices"
 
-	"github.com/omarfq/leveldb/iterator"
+	"github.com/omarfq/in_memory_leveldb/iterator"
 )
 
 type DB interface {

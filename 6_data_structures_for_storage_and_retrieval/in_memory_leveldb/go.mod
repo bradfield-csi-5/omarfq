@@ -1,4 +1,4 @@
-module github.com/omarfq/leveldb
+module github.com/omarfq/in_memory_leveldb
 
 go 1.22.0
 

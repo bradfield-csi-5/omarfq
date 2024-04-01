@@ -1,4 +1,4 @@
-package leveldb
+package in_memory_leveldb
 
 import (
 	//"bytes"
