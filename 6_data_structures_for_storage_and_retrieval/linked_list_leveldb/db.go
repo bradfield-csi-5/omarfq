@@ -84,25 +84,19 @@ func (ldb *LevelDb) Put(key, value []byte) error {
 	}
 
 	// Initialize current and previous nodes
-	prev := ldb.entries
 	curr := ldb.entries.Next
+	prev := ldb.entries
 
 	// Traverse the list to find the correct spot for insertion
 	for curr != nil {
 		if bytes.Equal(curr.Key, key) {
 			curr.Value = value // Update the value if key is found
 			return nil
-		} else if bytes.Compare(curr.Key, key) > 0 {
-			// Insert the new node between prev and curr
-			newEntry.Next = curr
-			prev.Next = newEntry
-			return nil
 		}
 		prev = curr
 		curr = curr.Next
 	}
 
-	// If we reached the end of the list, insert the new node at the end
 	prev.Next = newEntry
 
 	return nil
