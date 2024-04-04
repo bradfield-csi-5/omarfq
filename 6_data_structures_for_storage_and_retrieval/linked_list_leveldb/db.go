@@ -3,8 +3,7 @@ package linked_list_leveldb
 import (
 	"bytes"
 	"errors"
-
-	"slices"
+	"fmt"
 
 	"github.com/omarfq/linked_list_leveldb/iterator"
 )
@@ -32,106 +31,153 @@ type DB interface {
 	Dump() (iterator.Iterator, error)
 }
 
-type Entry struct {
-	Key   []byte
-	Value []byte
+type LevelDb struct {
+	entries *iterator.Node
 }
 
-type LevelDb struct {
-	entries []Entry
+func NewNode(key, val []byte) *LevelDb {
+	newNode := &iterator.Node{
+		Key:   key,
+		Value: val,
+		Next:  nil,
+	}
+	return &LevelDb{
+		entries: newNode,
+	}
 }
 
 func (ldb *LevelDb) Get(key []byte) ([]byte, error) {
-	idx, found := slices.BinarySearchFunc(ldb.entries, key, func(entry Entry, target []byte) int {
-		return bytes.Compare(entry.Key, target)
-	})
-
-	if found {
-		return ldb.entries[idx].Value, nil
+	curr := ldb.entries
+	for curr != nil {
+		if bytes.Equal(curr.Key, key) {
+			return curr.Value, nil
+		}
+		curr = curr.Next
 	}
 
 	return nil, errors.New("Key not found")
 }
 
 func (ldb *LevelDb) Has(key []byte) (bool, error) {
-	_, found := slices.BinarySearchFunc(ldb.entries, key, func(entry Entry, target []byte) int {
-		return bytes.Compare(entry.Key, target)
-	})
+	curr := ldb.entries
+	for curr != nil {
+		if bytes.Equal(curr.Key, key) {
+			return true, nil
+		}
+		curr = curr.Next
+	}
 
-	return found, nil
+	return false, nil
 }
 
 func (ldb *LevelDb) Put(key, value []byte) error {
-	idx, found := slices.BinarySearchFunc(ldb.entries, key, func(entry Entry, target []byte) int {
-		return bytes.Compare(entry.Key, target)
-	})
-
-	newEntry := Entry{key, value}
-
-	if found {
-		ldb.entries[idx].Value = value
-	} else {
-		ldb.entries = append(ldb.entries, newEntry)
+	newEntry := &iterator.Node{
+		Key:   key,
+		Value: value,
 	}
 
-	slices.SortFunc(ldb.entries, func(entry1, entry2 Entry) int {
-		return bytes.Compare(entry1.Key, entry2.Key)
-	})
-
-	return nil
-
-}
-
-func (ldb *LevelDb) Delete(key []byte) error {
-	idx, found := slices.BinarySearchFunc(ldb.entries, key, func(entry Entry, target []byte) int {
-		return bytes.Compare(entry.Key, target)
-	})
-
-	if found {
-		ldb.entries = append(ldb.entries[0:idx], ldb.entries[idx+1:]...)
+	// Special case for the head end
+	if ldb.entries == nil || bytes.Compare(ldb.entries.Key, key) > 0 {
+		newEntry.Next = ldb.entries
+		ldb.entries = newEntry
 		return nil
 	}
 
-	return errors.New("Could not delete Entry. Provided key not found")
+	// Initialize current and previous nodes
+	prev := ldb.entries
+	curr := ldb.entries.Next
+
+	// Traverse the list to find the correct spot for insertion
+	for curr != nil {
+		if bytes.Equal(curr.Key, key) {
+			curr.Value = value // Update the value if key is found
+			return nil
+		} else if bytes.Compare(curr.Key, key) > 0 {
+			// Insert the new node between prev and curr
+			newEntry.Next = curr
+			prev.Next = newEntry
+			return nil
+		}
+		prev = curr
+		curr = curr.Next
+	}
+
+	// If we reached the end of the list, insert the new node at the end
+	prev.Next = newEntry
+
+	return nil
+}
+
+func (ldb *LevelDb) Delete(key []byte) error {
+	if ldb.entries == nil {
+		return errors.New("list is empty")
+	}
+
+	// Handle the case where the key is at the beginning of the list
+	if bytes.Equal(ldb.entries.Key, key) {
+		ldb.entries = ldb.entries.Next
+		return nil
+	}
+
+	prev := ldb.entries
+	curr := ldb.entries.Next
+
+	for curr != nil {
+		if bytes.Equal(curr.Key, key) {
+			prev.Next = curr.Next
+			return nil
+		}
+		prev = curr
+		curr = curr.Next
+	}
+
+	return errors.New("key not found")
 }
 
 func (ldb *LevelDb) RangeScan(start, end []byte) (iterator.Iterator, error) {
-	idxStart, foundStart := slices.BinarySearchFunc(ldb.entries, start, func(entry Entry, target []byte) int {
-		return bytes.Compare(entry.Key, target)
-	})
+	var startNode, endNode *iterator.Node
+	current := ldb.entries
 
-	idxEnd, foundEnd := slices.BinarySearchFunc(ldb.entries, end, func(entry Entry, target []byte) int {
-		return bytes.Compare(entry.Key, target)
-	})
+	// Find start node
+	for current != nil && bytes.Compare(current.Key, start) < 0 {
+		current = current.Next
+	}
+	if current == nil {
+		return nil, errors.New("start key not found")
+	}
+	startNode = current
 
-	if !foundStart || !foundEnd {
-		return nil, errors.New("One or both of the provided range keys could not be found")
+	// Find end node
+	for current != nil && bytes.Compare(current.Key, end) <= 0 {
+		endNode = current
+		current = current.Next
 	}
 
-	newIterator := iterator.NewIter()
-	rangeSlice := ldb.entries[idxStart : idxEnd+1] // +2 to include the last range Entry in the Iterator
-
-	for _, Entry := range rangeSlice {
-		newTuple := iterator.Tuple{
-			Key:   Entry.Key,
-			Value: Entry.Value,
-		}
-		newIterator.Tuples = append(newIterator.Tuples, newTuple)
+	if startNode == nil || endNode == nil {
+		return nil, errors.New("invalid range")
 	}
 
-	return newIterator, nil
+	return iterator.NewIterator(startNode, endNode.Next), nil
 }
 
-func (ldb *LevelDb) Dump() (iterator.Iterator, error) {
-	newIterator := iterator.NewIter()
-
-	for _, Entry := range ldb.entries {
-		newTuple := iterator.Tuple{
-			Key:   Entry.Key,
-			Value: Entry.Value,
-		}
-		newIterator.Tuples = append(newIterator.Tuples, newTuple)
+func (ldb *LevelDb) PrintList() {
+	curr := ldb.entries
+	for curr != nil {
+		fmt.Printf("Key: %s, Value: %s\n", curr.Key, curr.Value)
+		curr = curr.Next
 	}
-
-	return newIterator, nil
 }
+
+//func (ldb *LevelDb) Dump() (iterator.Iterator, error) {
+//	newIterator := iterator.NewIter()
+//
+//	for _, Entry := range ldb.entries {
+//		newTuple := iterator.Tuple{
+//			Key:   Entry.Key,
+//			Value: Entry.Value,
+//		}
+//		newIterator.Tuples = append(newIterator.Tuples, newTuple)
+//	}
+//
+//	return newIterator, nil
+//}

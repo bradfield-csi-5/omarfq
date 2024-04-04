@@ -16,38 +16,46 @@ type Iterator interface {
 	Value() []byte
 }
 
-type Tuple struct {
+type Node struct {
 	Key   []byte
 	Value []byte
+	Next  *Node
 }
 
 type Iter struct {
-	Tuples  []Tuple
-	CurrIdx int
+	current *Node
+	end     *Node
 }
 
-func NewIter() *Iter {
+func NewIterator(start, end *Node) *Iter {
 	return &Iter{
-		Tuples:  make([]Tuple, 0),
-		CurrIdx: -1,
+		current: start,
+		end:     end,
 	}
 }
 
 func (it *Iter) Next() bool {
-	if it.CurrIdx < len(it.Tuples) {
-		it.CurrIdx++
+	if it.current == nil || it.current == it.end {
+		return false
 	}
-	return it.CurrIdx < len(it.Tuples)
+	it.current = it.current.Next
+	return it.current != nil && it.current != it.end
 }
 
-func (i *Iter) Error() error {
+func (it *Iter) Error() error {
 	return nil
 }
 
 func (it *Iter) Key() []byte {
-	return it.Tuples[it.CurrIdx].Key
+	if it.current == nil {
+		return nil
+	}
+	return it.current.Key
 }
 
 func (it *Iter) Value() []byte {
-	return it.Tuples[it.CurrIdx].Value
+	if it.current == nil {
+		return nil
+	}
+	return it.current.Value
 }

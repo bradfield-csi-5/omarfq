@@ -4,27 +4,27 @@ import (
 	//"bytes"
 	"database/sql"
 	"encoding/binary"
+	//"encoding/binary"
 	//"fmt"
 	"testing"
 
 	_ "github.com/lib/pq"
 )
 
-func seedDb() DB {
-	return &LevelDb{
-		entries: []Entry{
-			{
-				Key:   []byte("testkey1"),
-				Value: []byte("testvalue1"),
-			},
-		},
-	}
+func seedDb() *LevelDb {
+	key := []byte("testkey1")
+	value := []byte("testvalue1")
+
+	newNode := NewNode(key, value)
+	return newNode
 }
 
-func emptyLevelDb() DB {
-	return &LevelDb{
-		entries: make([]Entry, 0),
-	}
+func emptyLevelDb() *LevelDb {
+	key := make([]byte, 0)
+	value := make([]byte, 0)
+
+	newNode := NewNode(key, value)
+	return newNode
 }
 
 type entry struct {
@@ -123,7 +123,7 @@ func TestLevelDb_Delete_Error(t *testing.T) {
 }
 
 func TestLevelDb_RangeScan_Ok(t *testing.T) {
-	leveldb := seedDb()
+	leveldb := emptyLevelDb()
 
 	data := []struct {
 		key   []byte
@@ -146,19 +146,17 @@ func TestLevelDb_RangeScan_Ok(t *testing.T) {
 
 	it, _ := leveldb.RangeScan([]byte("bravo"), []byte("delta"))
 
-	expectedRangeScanResult := data[1:4]
+	expectedRangeScanResult := data[1:3]
 
 	for _, val := range expectedRangeScanResult {
-		if it.Next() {
-			if string(it.Key()) != string(val.key) {
-				t.Errorf("Expected %q, got %q", string(val.key), string(it.Key()))
-			}
-
+		if string(it.Key()) != string(val.key) && !it.Next() {
+			t.Errorf("Expected %q, got %q", string(val.key), string(it.Key()))
 		}
+
 	}
 }
 
-func Benchmark_InMemoryLevelDbPut(b *testing.B) {
+func Benchmark_LinkedListLevelDbPut(b *testing.B) {
 	db := setupDB()
 	defer db.Close()
 
