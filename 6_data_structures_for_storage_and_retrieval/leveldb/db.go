@@ -76,21 +76,18 @@ func (ldb *LevelDb) Put(key, value []byte) error {
 		Value: value,
 	}
 
-	// Special case for the head end
 	if ldb.entries == nil || bytes.Compare(ldb.entries.Key, key) > 0 {
 		newEntry.Next = ldb.entries
 		ldb.entries = newEntry
 		return nil
 	}
 
-	// Initialize current and previous nodes
 	curr := ldb.entries.Next
 	prev := ldb.entries
 
-	// Traverse the list to find the correct spot for insertion
 	for curr != nil {
 		if bytes.Equal(curr.Key, key) {
-			curr.Value = value // Update the value if key is found
+			curr.Value = value
 			return nil
 		}
 		prev = curr
@@ -107,7 +104,6 @@ func (ldb *LevelDb) Delete(key []byte) error {
 		return errors.New("list is empty")
 	}
 
-	// Handle the case where the key is at the beginning of the list
 	if bytes.Equal(ldb.entries.Key, key) {
 		ldb.entries = ldb.entries.Next
 		return nil
