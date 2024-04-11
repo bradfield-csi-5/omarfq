@@ -16,46 +16,48 @@ type Iterator interface {
 	Value() []byte
 }
 
-type Node struct {
-	Key   []byte
-	Value []byte
-	Next  *Node
+// Assuming SkipListNode is defined in your skip list implementation
+type SkipListNode struct {
+	Key, Value []byte
+	Forwards   []*SkipListNode // Array of forward pointers
 }
 
-type Iter struct {
-	current *Node
-	end     *Node
+type SkipListIter struct {
+	current *SkipListNode
 }
 
-func NewIterator(start, end *Node) *Iter {
-	return &Iter{
-		current: start,
-		end:     end,
+// NewSkipListIter creates a new iterator for a skip list starting at the given node
+func NewSkipListIter(startNode *SkipListNode) *SkipListIter {
+	return &SkipListIter{current: startNode}
+}
+
+// Next moves the iterator to the next node
+func (iter *SkipListIter) Next() bool {
+	if iter.current != nil && iter.current.Forwards[0] != nil {
+		iter.current = iter.current.Forwards[0]
+		return true
 	}
+	return false
 }
 
-func (it *Iter) Next() bool {
-	if it.current == nil || it.current == it.end {
-		return false
+// Key returns the key of the current node
+func (iter *SkipListIter) Key() []byte {
+	if iter.current != nil {
+		return iter.current.Key
 	}
-	it.current = it.current.Next
-	return it.current != nil && it.current != it.end
-}
-
-func (it *Iter) Error() error {
 	return nil
 }
 
-func (it *Iter) Key() []byte {
-	if it.current == nil {
-		return nil
+// Value returns the value of the current node
+func (iter *SkipListIter) Value() []byte {
+	if iter.current != nil {
+		return iter.current.Value
 	}
-	return it.current.Key
+	return nil
 }
 
-func (it *Iter) Value() []byte {
-	if it.current == nil {
-		return nil
-	}
-	return it.current.Value
+// Error could potentially be implemented to handle any errors encountered during iteration
+func (iter *SkipListIter) Error() error {
+	// Implementation depends on if/how you want to handle errors
+	return nil
 }
