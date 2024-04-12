@@ -32,128 +32,40 @@ type DB interface {
 }
 
 type LevelDb struct {
-	entries *iterator.Node
+	entries *SkipList
 }
 
-func NewNode(key, val []byte) *LevelDb {
-	newNode := &iterator.Node{
-		Key:   key,
-		Value: val,
-		Next:  nil,
+func NewLevelDb(key, val []byte) *LevelDb {
+	// Create a new SkipList instance
+	newSkipList := NewSkipList()
+
+	// Create the new LevelDb instance with the newly created SkipList
+	ldb := &LevelDb{
+		entries: newSkipList,
 	}
-	return &LevelDb{
-		entries: newNode,
+
+	// If an initial key and value are provided, insert them into the skip list
+	if key != nil && val != nil {
+		ldb.entries.Insert(key, val)
 	}
+
+	return ldb
 }
 
 func (ldb *LevelDb) Get(key []byte) ([]byte, error) {
-	curr := ldb.entries
-	for curr != nil {
-		if bytes.Equal(curr.Key, key) {
-			return curr.Value, nil
-		}
-		curr = curr.Next
-	}
-
-	return nil, errors.New("Key not found")
 }
 
 func (ldb *LevelDb) Has(key []byte) (bool, error) {
-	curr := ldb.entries
-	for curr != nil {
-		if bytes.Equal(curr.Key, key) {
-			return true, nil
-		}
-		curr = curr.Next
-	}
-
-	return false, nil
 }
 
 func (ldb *LevelDb) Put(key, value []byte) error {
-	newEntry := &iterator.Node{
-		Key:   key,
-		Value: value,
-	}
-
-	if ldb.entries == nil || bytes.Compare(ldb.entries.Key, key) > 0 {
-		newEntry.Next = ldb.entries
-		ldb.entries = newEntry
-		return nil
-	}
-
-	curr := ldb.entries.Next
-	prev := ldb.entries
-
-	for curr != nil {
-		if bytes.Equal(curr.Key, key) {
-			curr.Value = value
-			return nil
-		}
-		prev = curr
-		curr = curr.Next
-	}
-
-	prev.Next = newEntry
-
-	return nil
 }
 
 func (ldb *LevelDb) Delete(key []byte) error {
-	if ldb.entries == nil {
-		return errors.New("list is empty")
-	}
-
-	if bytes.Equal(ldb.entries.Key, key) {
-		ldb.entries = ldb.entries.Next
-		return nil
-	}
-
-	prev := ldb.entries
-	curr := ldb.entries.Next
-
-	for curr != nil {
-		if bytes.Equal(curr.Key, key) {
-			prev.Next = curr.Next
-			return nil
-		}
-		prev = curr
-		curr = curr.Next
-	}
-
-	return errors.New("key not found")
 }
 
 func (ldb *LevelDb) RangeScan(start, end []byte) (iterator.Iterator, error) {
-	var startNode, endNode *iterator.Node
-	current := ldb.entries
-
-	// Find start node
-	for current != nil && bytes.Compare(current.Key, start) < 0 {
-		current = current.Next
-	}
-	if current == nil {
-		return nil, errors.New("start key not found")
-	}
-	startNode = current
-
-	// Find end node
-	for current != nil && bytes.Compare(current.Key, end) <= 0 {
-		endNode = current
-		current = current.Next
-	}
-
-	if startNode == nil || endNode == nil {
-		return nil, errors.New("invalid range")
-	}
-
-	return iterator.NewIterator(startNode, endNode.Next), nil
 }
 
 func (ldb *LevelDb) PrintList() {
-	curr := ldb.entries
-	for curr != nil {
-		fmt.Printf("Key: %s, Value: %s\n", curr.Key, curr.Value)
-		curr = curr.Next
-	}
 }

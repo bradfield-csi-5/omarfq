@@ -19,7 +19,7 @@ type Iterator interface {
 // Assuming SkipListNode is defined in your skip list implementation
 type SkipListNode struct {
 	Key, Value []byte
-	Forwards   []*SkipListNode // Array of forward pointers
+	Forwards   []*SkipListNode // Array of forward
 }
 
 type SkipListIter struct {

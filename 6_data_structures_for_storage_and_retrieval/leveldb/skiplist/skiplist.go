@@ -1,4 +1,4 @@
-package leveldb
+package skiplist
 
 import (
 	"bytes"
@@ -20,10 +20,12 @@ type SkipList struct {
 	Head     *SkipListNode
 	Level    int
 	MaxLevel int
+	rnd      *rand.Rand
 }
 
 func NewSkipList() *SkipList {
-	rand.Seed(time.Now().UnixNano())
+	src := rand.NewSource(time.Now().UnixNano())
+	rnd := rand.New(src)
 
 	head := &SkipListNode{
 		Key:      nil,
@@ -35,19 +37,20 @@ func NewSkipList() *SkipList {
 		Head:     head,
 		Level:    0,
 		MaxLevel: MaxLevel,
+		rnd:      rnd,
 	}
 }
 
 func (sl *SkipList) randomLevel() int {
 	level := 1
-	for rand.Float64() < Probability && level < MaxLevel {
+	for sl.rnd.Float64() < Probability && level < sl.MaxLevel {
 		level++
 	}
 	return level
 }
 
 func (sl *SkipList) Insert(key, value []byte) {
-	update := make([]*SkipListNode, MaxLevel)
+	update := make([]*SkipListNode, sl.MaxLevel)
 	current := sl.Head
 
 	for i := sl.Level - 1; i >= 0; i-- {
@@ -79,7 +82,7 @@ func (sl *SkipList) Insert(key, value []byte) {
 }
 
 func (sl *SkipList) Delete(key []byte) {
-	update := make([]*SkipListNode, MaxLevel)
+	update := make([]*SkipListNode, sl.MaxLevel)
 	current := sl.Head
 
 	for i := sl.Level - 1; i >= 0; i-- {
