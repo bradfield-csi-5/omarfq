@@ -2,7 +2,10 @@ package skiplist
 
 import (
 	"bytes"
+	"fmt"
 	"math/rand"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -81,6 +84,58 @@ func (sl *SkipList) Insert(key, value []byte) {
 	}
 }
 
+func (sl *SkipList) PrintSkipList() {
+	highestUsed := len(sl.Head.Forwards) - 1 // highest level used in the skip list
+	outputLines := make([]string, highestUsed+1)
+	var keys []string
+
+	current := sl.Head
+	var nodeNum int
+	for current != nil {
+		repeatLen := 1
+		keyLen := len(current.Key)
+		if keyLen > repeatLen {
+			repeatLen = keyLen
+		}
+
+		for i := 0; i <= highestUsed; i++ {
+			if nodeNum != 0 { // Don't print dashes before the first node
+				outputLines[i] += strings.Repeat("-", repeatLen)
+				if i < len(current.Forwards) && current.Forwards[i] != nil {
+					outputLines[i] += ">"
+				} else {
+					outputLines[i] += strings.Repeat("-", repeatLen)
+				}
+			}
+
+			if i < len(current.Forwards) && current.Forwards[i] != nil {
+				outputLines[i] += strconv.Itoa(i)
+			} else if i == 0 {
+				outputLines[i] += "-" // Always print the bottom level
+			} else {
+				outputLines[i] += strings.Repeat(" ", repeatLen)
+			}
+		}
+
+		if current != sl.Head { // Skip the head node as it doesn't contain a user key
+			keys = append(keys, string(current.Key))
+		}
+
+		// Move to the next node at the bottom level
+		current = current.Forwards[0]
+		nodeNum++
+	}
+
+	for i := highestUsed; i >= 0; i-- {
+		fmt.Println(outputLines[i])
+	}
+
+	// Print keys at the bottom
+	keyLine := strings.Repeat(" ", 3) // Three spaces for alignment with root node
+	keyLine += strings.Join(keys, " ")
+	fmt.Println(keyLine)
+}
+
 func (sl *SkipList) Search(key []byte) *SkipListNode {
 	current := sl.Head
 	for i := sl.Level - 1; i >= 0; i-- {
@@ -95,7 +150,7 @@ func (sl *SkipList) Search(key []byte) *SkipListNode {
 	return nil
 }
 
-func (sl *SkipList) Delete(key []byte) {
+func (sl *SkipList) Delete(key []byte) error {
 	update := make([]*SkipListNode, sl.MaxLevel)
 	current := sl.Head
 
@@ -119,7 +174,10 @@ func (sl *SkipList) Delete(key []byte) {
 		for sl.Level > 1 && sl.Head.Forwards[sl.Level-1] == nil {
 			sl.Level--
 		}
+		return nil
 	}
+
+	return fmt.Errorf("Key not found: %s", key)
 }
 
 func (sl *SkipList) Update(key, value []byte) {

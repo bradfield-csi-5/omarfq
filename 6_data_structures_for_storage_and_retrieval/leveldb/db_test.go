@@ -15,16 +15,16 @@ func seedDb() *LevelDb {
 	key := []byte("testkey1")
 	value := []byte("testvalue1")
 
-	newNode := NewNode(key, value)
-	return newNode
+	ldb := NewLevelDb(key, value)
+	return ldb
 }
 
 func emptyLevelDb() *LevelDb {
 	key := make([]byte, 0)
 	value := make([]byte, 0)
 
-	newNode := NewNode(key, value)
-	return newNode
+	ldb := NewLevelDb(key, value)
+	return ldb
 }
 
 type entry struct {
@@ -131,10 +131,10 @@ func TestLevelDb_RangeScan_Ok(t *testing.T) {
 	}{
 		{[]byte("alpha"), []byte("Alpha")},
 		{[]byte("bravo"), []byte("Bravo")},
+		{[]byte("foxtrot"), []byte("Foxtrot")},
 		{[]byte("charlie"), []byte("Charlie")},
 		{[]byte("delta"), []byte("Delta")},
 		{[]byte("echo"), []byte("Echo")},
-		{[]byte("foxtrot"), []byte("Foxtrot")},
 	}
 
 	for _, entry := range data {
@@ -143,6 +143,8 @@ func TestLevelDb_RangeScan_Ok(t *testing.T) {
 			t.Fatalf("Failed to Put record with key %q in DB", entry.key)
 		}
 	}
+
+	leveldb.entries.PrintSkipList()
 
 	it, _ := leveldb.RangeScan([]byte("bravo"), []byte("delta"))
 
@@ -191,18 +193,4 @@ func Benchmark_LinkedListLevelDbPut(b *testing.B) {
 		}
 		rows.Close()
 	}
-
-	//it, _ := leveldb.Dump()
-	//for it.Next() {
-	//	var keyInt int64
-	//	keyBytes := it.Key()
-
-	//	err := binary.Read(bytes.NewReader(keyBytes), binary.BigEndian, &keyInt)
-	//	if err != nil {
-	//		fmt.Println("Error converting key bytes to int:", err)
-	//		continue
-	//	}
-
-	//	fmt.Printf("Key: %d, Value: %s\n", keyInt, string(it.Value()))
-	//}
 }

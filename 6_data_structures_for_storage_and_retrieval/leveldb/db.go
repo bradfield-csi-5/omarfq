@@ -1,7 +1,6 @@
 package leveldb
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 
@@ -76,7 +75,10 @@ func (ldb *LevelDb) Put(key, value []byte) error {
 }
 
 func (ldb *LevelDb) Delete(key []byte) error {
-	ldb.entries.Delete(key)
+	err := ldb.entries.Delete(key)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -87,7 +89,4 @@ func (ldb *LevelDb) RangeScan(start, end []byte) (iterator.Iterator, error) {
 	}
 
 	return iterator.NewSkipListIterator(startNode), nil
-}
-
-func (ldb *LevelDb) PrintList() {
 }
