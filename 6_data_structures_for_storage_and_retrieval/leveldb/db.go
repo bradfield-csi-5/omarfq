@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/omarfq/leveldb/iterator"
+	"github.com/omarfq/leveldb/skiplist"
 )
 
 type DB interface {
@@ -32,12 +33,12 @@ type DB interface {
 }
 
 type LevelDb struct {
-	entries *SkipList
+	entries *skiplist.SkipList
 }
 
 func NewLevelDb(key, val []byte) *LevelDb {
 	// Create a new SkipList instance
-	newSkipList := NewSkipList()
+	newSkipList := skiplist.NewSkipList()
 
 	// Create the new LevelDb instance with the newly created SkipList
 	ldb := &LevelDb{
@@ -53,18 +54,39 @@ func NewLevelDb(key, val []byte) *LevelDb {
 }
 
 func (ldb *LevelDb) Get(key []byte) ([]byte, error) {
+	node := ldb.entries.Search(key)
+	if node == nil {
+		return nil, errors.New("Key not found")
+	}
+
+	return node.Value, nil
 }
 
 func (ldb *LevelDb) Has(key []byte) (bool, error) {
+	node := ldb.entries.Search(key)
+	if node == nil {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (ldb *LevelDb) Put(key, value []byte) error {
+	ldb.entries.Insert(key, value)
+	return nil
 }
 
 func (ldb *LevelDb) Delete(key []byte) error {
+	ldb.entries.Delete(key)
+	return nil
 }
 
 func (ldb *LevelDb) RangeScan(start, end []byte) (iterator.Iterator, error) {
+	startNode := ldb.entries.Search(start)
+	if startNode == nil {
+		return nil, fmt.Errorf("Start key not found")
+	}
+
+	return iterator.NewSkipListIterator(startNode), nil
 }
 
 func (ldb *LevelDb) PrintList() {

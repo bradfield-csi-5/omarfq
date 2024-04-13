@@ -81,6 +81,20 @@ func (sl *SkipList) Insert(key, value []byte) {
 	}
 }
 
+func (sl *SkipList) Search(key []byte) *SkipListNode {
+	current := sl.Head
+	for i := sl.Level - 1; i >= 0; i-- {
+		for current.Forwards[i] != nil && bytes.Compare(current.Forwards[i].Key, key) < 0 {
+			current = current.Forwards[i]
+		}
+	}
+	possibleMatch := current.Forwards[0]
+	if possibleMatch != nil && bytes.Compare(possibleMatch.Key, key) >= 0 {
+		return possibleMatch
+	}
+	return nil
+}
+
 func (sl *SkipList) Delete(key []byte) {
 	update := make([]*SkipListNode, sl.MaxLevel)
 	current := sl.Head
