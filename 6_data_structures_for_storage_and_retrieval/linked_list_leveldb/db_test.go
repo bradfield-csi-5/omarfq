@@ -196,4 +196,13 @@ func Benchmark_LinkedListLevelDb(b *testing.B) {
 			leveldb.Get(keyBuf)
 		}
 	})
+
+	b.Run("RangeScan", func(b *testing.B) {
+		b.ResetTimer()
+		start := []byte("Whisky (2004)")
+		end := []byte("Elevator Girl (2010) ")
+		for i := 0; i < b.N; i++ {
+			leveldb.RangeScan(start, end)
+		}
+	})
 }
