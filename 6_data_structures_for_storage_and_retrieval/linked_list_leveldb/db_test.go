@@ -156,7 +156,7 @@ func TestLevelDb_RangeScan_Ok(t *testing.T) {
 	}
 }
 
-func Benchmark_LinkedListLevelDbPut(b *testing.B) {
+func Benchmark_LinkedListLevelDb(b *testing.B) {
 	db := setupDB()
 	defer db.Close()
 
