@@ -162,47 +162,38 @@ func Benchmark_LinkedListLevelDbPut(b *testing.B) {
 
 	leveldb := emptyLevelDb()
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		//var dbRecords entries
-
-		rows, err := db.Query("SELECT id, title FROM movies")
-		if err != nil {
-			b.Fatal(err)
-		}
-
-		for rows.Next() {
-			var id int64
-			var title string
-			if err := rows.Scan(&id, &title); err != nil {
+	b.Run("Put", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			rows, err := db.Query("SELECT id, title FROM movies")
+			if err != nil {
 				b.Fatal(err)
 			}
 
-			// Convert id to []byte
-			keyBuf := make([]byte, 8)
-			binary.BigEndian.PutUint64(keyBuf, uint64(id))
+			for rows.Next() {
+				var id int64
+				var title string
+				if err := rows.Scan(&id, &title); err != nil {
+					b.Fatal(err)
+				}
 
-			// Assuming title is already a string, convert it to []byte
-			valueBuf := []byte(title)
+				keyBuf := make([]byte, 8)
+				binary.BigEndian.PutUint64(keyBuf, uint64(id))
 
-			// Now you can call Put with both key and value as []byte
-			leveldb.Put(keyBuf, valueBuf)
+				valueBuf := []byte(title)
+
+				leveldb.Put(keyBuf, valueBuf)
+			}
+			rows.Close()
 		}
-		rows.Close()
-	}
+		//leveldb.entries.PrintSkipList()
+	})
 
-	//it, _ := leveldb.Dump()
-	//for it.Next() {
-	//	var keyInt int64
-	//	keyBytes := it.Key()
-
-	//	err := binary.Read(bytes.NewReader(keyBytes), binary.BigEndian, &keyInt)
-	//	if err != nil {
-	//		fmt.Println("Error converting key bytes to int:", err)
-	//		continue
-	//	}
-
-	//	fmt.Printf("Key: %d, Value: %s\n", keyInt, string(it.Value()))
-	//}
+	b.Run("Get", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			keyBuf := []byte("Innocence (2014)")
+			leveldb.Get(keyBuf)
+		}
+	})
 }

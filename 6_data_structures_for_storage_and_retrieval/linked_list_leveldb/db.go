@@ -92,6 +92,10 @@ func (ldb *LevelDb) Put(key, value []byte) error {
 		if bytes.Equal(curr.Key, key) {
 			curr.Value = value // Update the value if key is found
 			return nil
+		} else if bytes.Compare(curr.Key, key) > 0 {
+			newEntry.Next = curr
+			prev.Next = newEntry
+			return nil
 		}
 		prev = curr
 		curr = curr.Next
