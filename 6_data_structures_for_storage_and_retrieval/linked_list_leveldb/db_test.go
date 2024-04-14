@@ -205,4 +205,12 @@ func Benchmark_LinkedListLevelDb(b *testing.B) {
 			leveldb.RangeScan(start, end)
 		}
 	})
+
+	b.Run("Delete", func(b *testing.B) {
+		b.ResetTimer()
+		key := []byte("Whisky (2004)")
+		for i := 0; i < b.N; i++ {
+			leveldb.Delete(key)
+		}
+	})
 }
