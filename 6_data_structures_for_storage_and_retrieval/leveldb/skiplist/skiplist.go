@@ -85,7 +85,7 @@ func (sl *SkipList) Insert(key, value []byte) {
 }
 
 func (sl *SkipList) PrintSkipList() {
-	highestUsed := len(sl.Head.Forwards) - 1 // highest level used in the skip list
+	highestUsed := len(sl.Head.Forwards) - 1
 	outputLines := make([]string, highestUsed+1)
 	var keys []string
 
@@ -99,7 +99,7 @@ func (sl *SkipList) PrintSkipList() {
 		}
 
 		for i := 0; i <= highestUsed; i++ {
-			if nodeNum != 0 { // Don't print dashes before the first node
+			if nodeNum != 0 {
 				outputLines[i] += strings.Repeat("-", repeatLen)
 				if i < len(current.Forwards) && current.Forwards[i] != nil {
 					outputLines[i] += ">"
@@ -111,17 +111,16 @@ func (sl *SkipList) PrintSkipList() {
 			if i < len(current.Forwards) && current.Forwards[i] != nil {
 				outputLines[i] += strconv.Itoa(i)
 			} else if i == 0 {
-				outputLines[i] += "-" // Always print the bottom level
+				outputLines[i] += "-"
 			} else {
 				outputLines[i] += strings.Repeat(" ", repeatLen)
 			}
 		}
 
-		if current != sl.Head { // Skip the head node as it doesn't contain a user key
+		if current != sl.Head {
 			keys = append(keys, string(current.Key))
 		}
 
-		// Move to the next node at the bottom level
 		current = current.Forwards[0]
 		nodeNum++
 	}
@@ -130,8 +129,7 @@ func (sl *SkipList) PrintSkipList() {
 		fmt.Println(outputLines[i])
 	}
 
-	// Print keys at the bottom
-	keyLine := strings.Repeat(" ", 3) // Three spaces for alignment with root node
+	keyLine := strings.Repeat(" ", 3)
 	keyLine += strings.Join(keys, " ")
 	fmt.Println(keyLine)
 }

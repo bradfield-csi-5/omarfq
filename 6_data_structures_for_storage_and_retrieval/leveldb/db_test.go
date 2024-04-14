@@ -203,9 +203,17 @@ func Benchmark_LevelDb(b *testing.B) {
 	b.Run("RangeScan", func(b *testing.B) {
 		b.ResetTimer()
 		start := []byte("Whisky (2004)")
-		end := []byte("Elevator Girl (2010) ")
+		end := []byte("Elevator Girl (2010)")
 		for i := 0; i < b.N; i++ {
 			leveldb.RangeScan(start, end)
+		}
+	})
+
+	b.Run("Delete", func(b *testing.B) {
+		b.ResetTimer()
+		key := []byte("Whisky (2004)")
+		for i := 0; i < b.N; i++ {
+			leveldb.Delete(key)
 		}
 	})
 }

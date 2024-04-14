@@ -1,38 +1,21 @@
 package leveldb
 
 import (
+	"bufio"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/omarfq/leveldb/iterator"
 	"github.com/omarfq/leveldb/skiplist"
+	"github.com/omarfq/leveldb/wal"
 )
-
-type DB interface {
-	// Get gets the value for the given key. It returns an error if the
-	// DB does not contain the key.
-	Get(key []byte) (value []byte, err error)
-
-	// Has returns true if the DB contains the given key.
-	Has(key []byte) (ret bool, err error)
-
-	// Put sets the value for the given key. It overwrites any previous value
-	// for that key; a DB is not a multi-map.
-	Put(key, value []byte) error
-
-	// Delete deletes the value for the given key.
-	Delete(key []byte) error
-
-	// RangeScan returns an Iterator (see below) for scanning through all
-	// key-value pairs in the given range, ordered by key ascending.
-	RangeScan(start, limit []byte) (iterator.Iterator, error)
-
-	// Dump returns all the records in the database in a readable format
-	Dump() (iterator.Iterator, error)
-}
 
 type LevelDb struct {
 	entries *skiplist.SkipList
+	wal     *wal.WAL
 }
 
 func NewLevelDb(key, val []byte) *LevelDb {
@@ -70,12 +53,20 @@ func (ldb *LevelDb) Has(key []byte) (bool, error) {
 }
 
 func (ldb *LevelDb) Put(key, value []byte) error {
+	err := ldb.wal.Write(wal.OpPut, key, value)
+	if err != nil {
+		return err
+	}
 	ldb.entries.Insert(key, value)
 	return nil
 }
 
 func (ldb *LevelDb) Delete(key []byte) error {
-	err := ldb.entries.Delete(key)
+	err := ldb.wal.Write(wal.OpDelete, key, nil)
+	if err != nil {
+		return err
+	}
+	err = ldb.entries.Delete(key)
 	if err != nil {
 		return err
 	}
@@ -89,4 +80,65 @@ func (ldb *LevelDb) RangeScan(start, end []byte) (iterator.Iterator, error) {
 	}
 
 	return iterator.NewSkipListIterator(startNode), nil
+}
+
+func (ldb *LevelDb) RecoverFromWAL() error {
+	file, err := os.Open("wal.go")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+
+	for {
+		op, err := reader.ReadByte()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+
+		keyLenBuf := make([]byte, 4) // Key length pos in binary format is 4 bytes max
+		_, err = io.ReadFull(reader, keyLenBuf)
+		if err != nil {
+			return err
+		}
+
+		keyLen := binary.BigEndian.Uint32(keyLenBuf)
+
+		var valueLen uint32
+		if op == wal.OpPut {
+			valueLenBuf := make([]byte, 4)
+			_, err = io.ReadFull(reader, valueLenBuf)
+			if err != nil {
+				return err
+			}
+			valueLen = binary.BigEndian.Uint32(valueLenBuf)
+		}
+
+		key := make([]byte, keyLen)
+		_, err = io.ReadFull(reader, key)
+		if err != nil {
+			return err
+		}
+
+		var value []byte
+		if op == wal.OpPut {
+			value = make([]byte, valueLen)
+			_, err := io.ReadFull(reader, value)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Decide which op to execute
+		switch op {
+		case wal.OpPut:
+			ldb.Put(key, value)
+		case wal.OpDelete:
+			ldb.Delete(key)
+		}
+	}
+	return nil
 }
