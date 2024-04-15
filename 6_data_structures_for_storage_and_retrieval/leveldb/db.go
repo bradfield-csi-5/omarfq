@@ -18,21 +18,28 @@ type LevelDb struct {
 	wal     *wal.WAL
 }
 
-func NewLevelDb(key, val []byte) *LevelDb {
-	// Create a new SkipList instance
+func NewLevelDb(key, val []byte) (*LevelDb, error) {
 	newSkipList := skiplist.NewSkipList()
+	newWAL, err := wal.NewWAL("logs/leveldb.log")
 
-	// Create the new LevelDb instance with the newly created SkipList
-	ldb := &LevelDb{
-		entries: newSkipList,
+	if err != nil {
+		return nil, err
 	}
 
-	// If an initial key and value are provided, insert them into the skip list
+	ldb := &LevelDb{
+		entries: newSkipList,
+		wal:     newWAL,
+	}
+
 	if key != nil && val != nil {
+		err = ldb.wal.Write(wal.OpPut, key, val)
+		if err != nil {
+			return nil, err
+		}
 		ldb.entries.Insert(key, val)
 	}
 
-	return ldb
+	return ldb, nil
 }
 
 func (ldb *LevelDb) Get(key []byte) ([]byte, error) {

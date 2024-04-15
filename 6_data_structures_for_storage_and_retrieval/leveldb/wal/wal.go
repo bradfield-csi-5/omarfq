@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"os"
+	"path/filepath"
 )
 
 const (
@@ -16,6 +17,11 @@ type WAL struct {
 }
 
 func NewWAL(path string) (*WAL, error) {
+	dir := filepath.Dir(path)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.MkdirAll(dir, 0755)
+	}
+
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return nil, err
@@ -27,7 +33,7 @@ func NewWAL(path string) (*WAL, error) {
 }
 
 func (wal *WAL) Write(op byte, key, value []byte) error {
-	f, err := os.OpenFile("wal.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	f, err := os.OpenFile("logs/leveldb.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 
 	if err != nil {
 		return err
