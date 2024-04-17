@@ -84,6 +84,7 @@ func (sl *SkipList) Insert(key, value []byte) {
 	}
 }
 
+// Challenge accepted.... Challenge failed successfully
 func (sl *SkipList) PrintSkipList() {
 	highestUsed := len(sl.Head.Forwards) - 1
 	outputLines := make([]string, highestUsed+1)

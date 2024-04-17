@@ -16,7 +16,7 @@ func seedDb() *LevelDb {
 	key := []byte("testkey1")
 	value := []byte("testvalue1")
 
-	ldb := NewLevelDb(key, value)
+	ldb, _ := NewLevelDb(key, value)
 	return ldb
 }
 
@@ -24,7 +24,7 @@ func emptyLevelDb() *LevelDb {
 	key := make([]byte, 0)
 	value := make([]byte, 0)
 
-	ldb := NewLevelDb(key, value)
+	ldb, _ := NewLevelDb(key, value)
 	return ldb
 }
 
