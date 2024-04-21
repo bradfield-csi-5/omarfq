@@ -13,9 +13,13 @@ import (
 	"github.com/omarfq/leveldb/wal"
 )
 
+const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
+
 type LevelDb struct {
-	entries *skiplist.SkipList
-	wal     *wal.WAL
+	entries             *skiplist.SkipList
+	wal                 *wal.WAL
+	memtableSizeCounter int
+	// sstables []*os.File??
 }
 
 func NewLevelDb(key, val []byte) (*LevelDb, error) {
@@ -32,6 +36,7 @@ func NewLevelDb(key, val []byte) (*LevelDb, error) {
 	}
 
 	if key != nil && val != nil {
+		//		ldb.checkFlush(ldb.memtableSizeCounter)
 		err = ldb.wal.Write(wal.OpPut, key, val)
 		if err != nil {
 			return nil, err
@@ -43,8 +48,11 @@ func NewLevelDb(key, val []byte) (*LevelDb, error) {
 }
 
 func (ldb *LevelDb) Get(key []byte) ([]byte, error) {
+	// Search in memtable first
 	node := ldb.entries.Search(key)
 	if node == nil {
+		// If not found in memory, search in SSTables
+		// We probably want to tweak this logic a bit
 		return nil, errors.New("Key not found")
 	}
 
@@ -139,7 +147,6 @@ func (ldb *LevelDb) RecoverFromWAL() error {
 			}
 		}
 
-		// Decide which op to execute
 		switch op {
 		case wal.OpPut:
 			ldb.Put(key, value)
@@ -149,3 +156,16 @@ func (ldb *LevelDb) RecoverFromWAL() error {
 	}
 	return nil
 }
+
+func (ldb *LevelDb) flushSSTable(file *os.File) error {
+	return nil
+}
+
+//func (ldb *LevelDb) checkFlush(currMemtableSize int) {
+//	if currMemtableSize >= MAX_FILE_SIZE {
+//		// To which file?
+//		ldb.flushSSTable()
+//	} else {
+//		ldb.memtableSizeCounter += currMemtableSize
+//	}
+//}

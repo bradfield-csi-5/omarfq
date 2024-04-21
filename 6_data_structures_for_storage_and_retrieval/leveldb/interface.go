@@ -20,7 +20,4 @@ type DB interface {
 	// RangeScan returns an Iterator (see below) for scanning through all
 	// key-value pairs in the given range, ordered by key ascending.
 	RangeScan(start, limit []byte) (iterator.Iterator, error)
-
-	// Dump returns all the records in the database in a readable format
-	Dump() (iterator.Iterator, error)
 }

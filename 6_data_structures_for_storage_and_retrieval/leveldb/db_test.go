@@ -145,7 +145,7 @@ func TestLevelDb_RangeScan_Ok(t *testing.T) {
 		}
 	}
 
-	//	leveldb.entries.PrintSkipList()
+	leveldb.entries.PrintSkipList()
 
 	it, _ := leveldb.RangeScan([]byte("bravo"), []byte("delta"))
 
