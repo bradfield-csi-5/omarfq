@@ -1,22 +1,23 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/chzyer/readline"
+	"io"
+	"os"
+	"strings"
 )
 
-func main() {
-	rl, err := readline.New("Wirte something here > ")
+const FILENAME = "kvstore.json"
 
+func main() {
+	rl, err := readline.New("Commands: get [key] | set [key]=[value] > ")
 	if err != nil {
 		panic(err)
 	}
-
 	defer rl.Close()
 
-	kvStore := map[string]string{}
 	instructions := map[string]bool{"set": true, "get": true}
 
 	for {
@@ -45,14 +46,73 @@ func main() {
 				continue
 			}
 			key, val := valueSlice[0], valueSlice[1]
-			kvStore[key] = val
-			fmt.Printf("Inserted key: %s and value: %s\n", key, val)
-		case "get":
-			if _, ok := kvStore[value]; !ok {
-				fmt.Println("Error: The key does not exist in the key-value store.")
+			if err := writeToFile(FILENAME, key, val); err != nil {
+				fmt.Printf("Error: Could not write to JSON file. %s\n", err)
 				continue
 			}
-			fmt.Println(kvStore[value])
+			fmt.Printf("Inserted key: %s and value: %s\n", key, val)
+		case "get":
+			val, err := getFromFile(FILENAME, value)
+			if err != nil {
+				fmt.Printf("Error: Could not read from JSON file. %s\n", err)
+				continue
+			}
+			fmt.Println(val)
 		}
 	}
+}
+
+func writeToFile(filename, key, value string) error {
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+	var data map[string]string
+	if err := decoder.Decode(&data); err != nil {
+		if err != io.EOF {
+			return err
+		}
+		data = make(map[string]string)
+	}
+
+	data[key] = value
+
+	if err := file.Truncate(0); err != nil {
+		return err
+	}
+
+	if _, err := file.Seek(0, 0); err != nil {
+		return err
+	}
+
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getFromFile(filename, key string) (string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+	var data map[string]string
+	if err := decoder.Decode(&data); err != nil {
+		return "", err
+	}
+
+	val, ok := data[key]
+	if !ok {
+		return "", fmt.Errorf("Key %q not found in the file", key)
+	}
+
+	return val, nil
 }
