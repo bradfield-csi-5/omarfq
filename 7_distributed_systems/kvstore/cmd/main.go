@@ -6,10 +6,11 @@ import (
 	"github.com/chzyer/readline"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
-const FILENAME = "kvstore.json"
+const FILENAME = "data/kvstore.json"
 
 func main() {
 	rl, err := readline.New("Commands: get [key] | set [key]=[value] > ")
@@ -62,8 +63,13 @@ func main() {
 	}
 }
 
-func writeToFile(filename, key, value string) error {
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
+func writeToFile(path, key, value string) error {
+	dir := filepath.Dir(path)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.MkdirAll(dir, 0755)
+	}
+
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
