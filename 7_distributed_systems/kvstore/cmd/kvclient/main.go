@@ -2,11 +2,13 @@ package kvclient
 
 import (
 	"fmt"
-	"github.com/chzyer/readline"
+	"net"
 	"strings"
 
-	"github.com/omarfq/kvstore/pkg/store"
+	"github.com/chzyer/readline"
 )
+
+const SOCKET_PATH = "/tmp/kvstore.sock"
 
 func main() {
 	rl, err := readline.New("Commands: get [key] | set [key]=[value] > ")
@@ -17,25 +19,42 @@ func main() {
 
 	instructions := map[string]bool{"set": true, "get": true}
 
-	kvstore := store.NewFileKVStore(PATH)
-
 	for {
 		line, err := rl.Readline()
 		if err != nil {
+			fmt.Println("Error reading line:", err)
 			break
 		}
 
 		cmd := strings.Split(line, " ")
 		if len(cmd) != 2 {
-			fmt.Println("Error: Invalid input.")
+			fmt.Println("Error: Invalid input. Please use the format 'command [key]' or 'command [key]=[value]'")
 			continue
 		}
 
-		instruction, value := cmd[0], cmd[1]
-		if _, ok := instructions[instruction]; !ok {
-			fmt.Println("Error: Invalid instruction. Please make sure to use either 'get' or 'set'.")
+		conn, err := net.Dial("unix", SOCKET_PATH)
+		if err != nil {
+			fmt.Printf("Failed to connect to server: %s\n", err)
 			continue
 		}
 
+		_, err = conn.Write([]byte(line))
+		if err != nil {
+			fmt.Printf("Failed to send data: %s\n", err)
+			conn.Close()
+			continue
+		}
+
+		response := make([]byte, 1024)
+		n, err := conn.Read(response)
+		if err != nil {
+			fmt.Printf("Failed to read response: %s\n", err)
+			conn.Close()
+			continue
+		}
+
+		fmt.Println("Response from server:", string(response[:n]))
+
+		conn.Close()
 	}
 }
