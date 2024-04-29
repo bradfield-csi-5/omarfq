@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/omarfq/kvstore/internal/store"
 	"github.com/omarfq/kvstore/internal/utils"
-	"github.com/omarfq/kvstore/pkg/store"
 )
 
 const SOCKET_PATH = "/tmp/kvstore.sock"
