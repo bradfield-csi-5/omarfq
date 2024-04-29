@@ -1,4 +1,4 @@
-package kvclient
+package main
 
 import (
 	"fmt"

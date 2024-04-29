@@ -1,4 +1,4 @@
-package kvserver
+package main
 
 import (
 	"fmt"
