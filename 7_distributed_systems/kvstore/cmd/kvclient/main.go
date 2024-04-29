@@ -3,9 +3,9 @@ package kvclient
 import (
 	"fmt"
 	"net"
-	"strings"
 
 	"github.com/chzyer/readline"
+	"github.com/omarfq/kvstore/internal/utils"
 )
 
 const SOCKET_PATH = "/tmp/kvstore.sock"
@@ -17,8 +17,6 @@ func main() {
 	}
 	defer rl.Close()
 
-	instructions := map[string]bool{"set": true, "get": true}
-
 	for {
 		line, err := rl.Readline()
 		if err != nil {
@@ -26,18 +24,20 @@ func main() {
 			break
 		}
 
-		cmd := strings.Split(line, " ")
-		if len(cmd) != 2 {
-			fmt.Println("Error: Invalid input. Please use the format 'command [key]' or 'command [key]=[value]'")
+		_, _, err = utils.ParseInput(line)
+		if err != nil {
+			fmt.Printf("Failed to parse input: %s", err)
 			continue
 		}
 
+		// Connect to the server via UNIX socket
 		conn, err := net.Dial("unix", SOCKET_PATH)
 		if err != nil {
 			fmt.Printf("Failed to connect to server: %s\n", err)
 			continue
 		}
 
+		// Send the instruction and value to the server
 		_, err = conn.Write([]byte(line))
 		if err != nil {
 			fmt.Printf("Failed to send data: %s\n", err)
@@ -45,6 +45,7 @@ func main() {
 			continue
 		}
 
+		// Read response from server
 		response := make([]byte, 1024)
 		n, err := conn.Read(response)
 		if err != nil {
@@ -55,6 +56,7 @@ func main() {
 
 		fmt.Println("Response from server:", string(response[:n]))
 
+		// Close the connection after the interaction
 		conn.Close()
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/omarfq/kvstore/internal/utils"
 	"github.com/omarfq/kvstore/pkg/store"
 )
 
@@ -46,13 +47,10 @@ func readData(conn net.Conn) {
 		return
 	}
 	data := string(buf[:n])
-	parts := strings.SplitN(data, " ", 2)
-	if len(parts) != 2 {
-		fmt.Fprintf(conn, "Error: Invalid input\n")
-		return
-	}
 
-	response, err := processInstruction(parts[0], parts[1])
+	instruction, item, err := utils.ParseInput(string(data))
+
+	response, err := processInstruction(instruction, item)
 	if err != nil {
 		fmt.Fprintf(conn, "Error: %s\n", err)
 		return
