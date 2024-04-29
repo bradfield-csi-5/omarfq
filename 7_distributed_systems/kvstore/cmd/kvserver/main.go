@@ -30,6 +30,7 @@ func main() {
 			fmt.Printf("Failed to accept connection: %s\n", err)
 			continue
 		}
+		fmt.Println("Server running...")
 		go handleConnection(conn)
 	}
 }

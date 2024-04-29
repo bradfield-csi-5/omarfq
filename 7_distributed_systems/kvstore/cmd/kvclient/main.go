@@ -36,6 +36,7 @@ func main() {
 			fmt.Printf("Failed to connect to server: %s\n", err)
 			continue
 		}
+		fmt.Println("Connected to server succesfully...")
 
 		// Send the instruction and value to the server
 		_, err = conn.Write([]byte(line))
