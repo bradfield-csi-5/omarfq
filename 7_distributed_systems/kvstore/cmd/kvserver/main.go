@@ -72,7 +72,7 @@ func processInstruction(instruction, item string) (string, error) {
 		if err := kvstore.Set(key, val); err != nil {
 			return "", fmt.Errorf("could not write to JSON file: %s", err)
 		}
-		return fmt.Sprintf("Inserted key: %s and item: %s", key, val), nil
+		return fmt.Sprint("OK\n"), nil
 	case "get":
 		val, err := kvstore.Get(item)
 		if err != nil {
