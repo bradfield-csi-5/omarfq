@@ -2,13 +2,13 @@ package store
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	pb "github.com/omarfq/kvstore/api/v1"
 	"google.golang.org/protobuf/proto"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const FILE_PATH = "data/kvstore.dat"
@@ -67,7 +67,7 @@ func (store *FileKVStore) Get(key *pb.Data) (string, error) {
 		// Unmarshall binary data
 		data := &pb.Data{}
 		if err := proto.Unmarshal(dataBuf, data); err != nil {
-			return "", fmt.Errorf("Failed to unmarshal record data: %w", err)
+			return "", fmt.Errorf("failed to unmarshal record data: %w", err)
 		}
 
 		// Compare keys
@@ -76,43 +76,45 @@ func (store *FileKVStore) Get(key *pb.Data) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("The key: %s does not exist in the key-value store", key.Key)
+	return "", fmt.Errorf("the key: %s does not exist in the key-value store", key.Key)
 }
 
-func (store *FileKVStore) Set(kvpair *pb.Data) error {
-	dir := filepath.Dir(store.path)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		os.MkdirAll(dir, 0755)
-	}
-
-	file, err := os.OpenFile(store.path, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	decoder := json.NewDecoder(file)
-	var data map[string]string
-	if err := decoder.Decode(&data); err != nil {
-		if err != io.EOF {
-			return err
+func (store *FileKVStore) Set(keyValue *pb.Data) error {
+	// Check if key exists, if it does update it
+	existingValue, err := store.Get(keyValue)
+	if err == nil {
+		if existingValue == keyValue.Value {
+			return nil // No update required
 		}
-		data = make(map[string]string)
+	} else if !strings.Contains(err.Error(), "does not exist") {
+		return fmt.Errorf("failed to check existing key: %w", err)
 	}
 
-	data[key] = value
-
-	if err := file.Truncate(0); err != nil {
-		return err
+	// Marshal the new key-value pair
+	dataBytes, err := proto.Marshal(keyValue)
+	if err != nil {
+		return fmt.Errorf("failed to serialize key-value pair: %w", err)
 	}
 
-	if _, err := file.Seek(0, 0); err != nil {
-		return err
+	lengthBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(lengthBytes, uint64(len(dataBytes)))
+
+	// Append to the end of the file
+	_, err = store.File.Seek(0, io.SeekEnd)
+	if err != nil {
+		return fmt.Errorf("failed to seek to end of file: %w", err)
 	}
 
-	encoder := json.NewEncoder(file)
-	if err := encoder.Encode(data); err != nil {
-		return err
+	if _, err := store.File.Write(lengthBytes); err != nil {
+		return fmt.Errorf("failed to write length prefix: %w", err)
+	}
+	if _, err := store.File.Write(dataBytes); err != nil {
+		return fmt.Errorf("failed to write data: %w", err)
+	}
+
+	// Flush
+	if err := store.File.Sync(); err != nil {
+		return fmt.Errorf("failed to flush data to disk: %w", err)
 	}
 
 	return nil
