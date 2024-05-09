@@ -23,9 +23,9 @@ func ParseInput(input string) (operation, key, value string, error error) {
 	split_keyvalue := strings.Split(cmd[1], "=")
 
 	if len(split_keyvalue) == 2 {
-		key, value = split_keyvalue[0], split_keyvalue[0]
+		key, value = split_keyvalue[0], split_keyvalue[1]
 		return operation, key, value, nil
 	}
-
+	key = split_keyvalue[0]
 	return operation, key, "", nil
 }

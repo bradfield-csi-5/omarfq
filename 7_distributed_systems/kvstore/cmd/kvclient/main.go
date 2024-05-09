@@ -52,7 +52,6 @@ func main() {
 			fmt.Printf("Failed to connect to server: %s\n", err)
 			continue
 		}
-		fmt.Println("Connected to server succesfully...")
 
 		// Send the instruction and value to the server
 		_, err = conn.Write(out)
@@ -71,7 +70,7 @@ func main() {
 			continue
 		}
 
-		fmt.Println("Response from server:", string(response[:n]))
+		fmt.Println(string(response[:n]))
 
 		// Close the connection after the interaction
 		conn.Close()
