@@ -78,13 +78,13 @@ func processInstruction(operation, key, value string) (string, error) {
 	switch operation {
 	case "set":
 		if err := kvstore.Set(data); err != nil {
-			return "", fmt.Errorf("Could not write to JSON file: %s", err)
+			return "", fmt.Errorf("Could not write to file: %s", err)
 		}
 		return fmt.Sprint("OK\n"), nil
 	case "get":
 		val, err := kvstore.Get(data)
 		if err != nil {
-			return "", fmt.Errorf("Could not read from JSON file: %s", err)
+			return "", fmt.Errorf("Could not read from file: %s", err)
 		}
 		return val, nil
 	default:
