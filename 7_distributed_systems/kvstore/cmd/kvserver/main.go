@@ -66,7 +66,7 @@ func processInstruction(instruction, item string) (string, error) {
 	case "set":
 		itemSlice := strings.Split(item, "=")
 		if len(itemSlice) != 2 {
-			return "", fmt.Errorf("invalid key-item pair")
+			return "", fmt.Errorf("invalid key-value pair")
 		}
 		key, val := itemSlice[0], itemSlice[1]
 		if err := kvstore.Set(key, val); err != nil {

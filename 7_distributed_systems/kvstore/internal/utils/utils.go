@@ -5,18 +5,27 @@ import (
 	"strings"
 )
 
-func ParseInput(input string) (string, string, error) {
-	instructions := map[string]bool{"set": true, "get": true}
+func ParseInput(input string) (operation, key, value string, error error) {
+	operations := map[string]bool{"set": true, "get": true}
 
 	cmd := strings.Split(input, " ")
 	if len(cmd) != 2 {
-		return "", "", fmt.Errorf("Error: Invalid input -> %s", cmd)
+		error = fmt.Errorf("Error: Invalid input -> %s", cmd)
+		return "", "", "", error
 	}
 
-	instruction, item := cmd[0], cmd[1]
-	if _, ok := instructions[instruction]; !ok {
-		return "", "", fmt.Errorf("Error: Invalid instruction. Please make sure to use either 'get' or 'set'.")
+	operation = cmd[0]
+	if _, ok := operations[operation]; !ok {
+		error = fmt.Errorf("Error: Invalid instruction. Please make sure to use either 'get' or 'set'.")
+		return "", "", "", error
 	}
 
-	return instruction, item, nil
+	split_keyvalue := strings.Split(cmd[1], "=")
+
+	if len(split_keyvalue) == 2 {
+		key, value = split_keyvalue[0], split_keyvalue[0]
+		return operation, key, value, nil
+	}
+
+	return operation, key, "", nil
 }
