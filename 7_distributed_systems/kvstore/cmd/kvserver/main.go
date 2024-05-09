@@ -49,6 +49,7 @@ func readData(conn net.Conn) {
 		fmt.Printf("Error reading data: %s\n", err)
 		return
 	}
+
 	err = proto.Unmarshal(buf[:n], command)
 	if err != nil {
 		fmt.Printf("Error unmarshalling the incoming data buffer: %s\n", err)
@@ -64,16 +65,24 @@ func readData(conn net.Conn) {
 }
 
 func processInstruction(operation, key, value string) (string, error) {
-	kvstore := store.NewFileKVStore(PATH)
+	kvstore, err := store.FileKVStoreInstance()
+	data := &pb.Data{
+		Key:   key,
+		Value: value,
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("Unable to instantiate the FileKVStoreInstance: %s", err)
+	}
 
 	switch operation {
 	case "set":
-		if err := kvstore.Set(key, value); err != nil {
+		if err := kvstore.Set(data); err != nil {
 			return "", fmt.Errorf("Could not write to JSON file: %s", err)
 		}
 		return fmt.Sprint("OK\n"), nil
 	case "get":
-		val, err := kvstore.Get(key)
+		val, err := kvstore.Get(data)
 		if err != nil {
 			return "", fmt.Errorf("Could not read from JSON file: %s", err)
 		}

@@ -9,3 +9,8 @@ message Command {
   string key = 2;
   string value = 3;
 }
+
+message Data {
+  string key = 1;
+  string value = 2;
+}
