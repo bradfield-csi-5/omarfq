@@ -112,13 +112,19 @@ func (store *KVStore) Set(keyValue *pb.Data) error {
 	lengthBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(lengthBytes, uint64(len(dataBytes)))
 
-	err = appendToEndOfFile(lengthBytes, dataBytes, store.PrimaryNode)
-	if err != nil {
+	primaryErr := appendToEndOfFile(lengthBytes, dataBytes, store.PrimaryNode)
+	if primaryErr != nil {
 		return err
 	}
 
-	err = appendToEndOfFile(lengthBytes, dataBytes, store.SecondaryNode)
-	if err != nil {
+	secondaryErr := make(chan error)
+
+	go func(lengthBytes, databytes []byte, node *os.File) {
+		err := appendToEndOfFile(lengthBytes, databytes, node)
+		secondaryErr <- err
+	}(lengthBytes, dataBytes, store.SecondaryNode)
+
+	if secondaryErr != nil {
 		return err
 	}
 
