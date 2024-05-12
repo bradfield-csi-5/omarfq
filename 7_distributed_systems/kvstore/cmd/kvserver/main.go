@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strings"
 
+	pb "github.com/omarfq/kvstore/api/v1"
 	"github.com/omarfq/kvstore/internal/store"
-	"github.com/omarfq/kvstore/internal/utils"
+	"google.golang.org/protobuf/proto"
 )
 
 const SOCKET_PATH = "/tmp/kvstore.sock"
@@ -24,13 +24,14 @@ func main() {
 	}
 	defer listener.Close()
 
+	fmt.Println("Server running...")
+
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			fmt.Printf("Failed to accept connection: %s\n", err)
 			continue
 		}
-		fmt.Println("Server running...")
 		go handleConnection(conn)
 	}
 }
@@ -42,16 +43,20 @@ func handleConnection(conn net.Conn) {
 
 func readData(conn net.Conn) {
 	buf := make([]byte, 512)
+	command := &pb.Command{}
 	n, err := conn.Read(buf)
 	if err != nil {
 		fmt.Printf("Error reading data: %s\n", err)
 		return
 	}
-	data := string(buf[:n])
 
-	instruction, item, err := utils.ParseInput(string(data))
+	err = proto.Unmarshal(buf[:n], command)
+	if err != nil {
+		fmt.Printf("Error unmarshalling the incoming data buffer: %s\n", err)
+		return
+	}
 
-	response, err := processInstruction(instruction, item)
+	response, err := processInstruction(command.Operation, command.Key, command.Value)
 	if err != nil {
 		fmt.Fprintf(conn, "Error: %s\n", err)
 		return
@@ -59,27 +64,30 @@ func readData(conn net.Conn) {
 	fmt.Fprintf(conn, "%s\n", response)
 }
 
-func processInstruction(instruction, item string) (string, error) {
-	kvstore := store.NewFileKVStore(PATH)
+func processInstruction(operation, key, value string) (string, error) {
+	kvstore, err := store.FileKVStoreInstance()
+	data := &pb.Data{
+		Key:   key,
+		Value: value,
+	}
 
-	switch instruction {
+	if err != nil {
+		return "", fmt.Errorf("Unable to instantiate the FileKVStoreInstance: %s", err)
+	}
+
+	switch operation {
 	case "set":
-		itemSlice := strings.Split(item, "=")
-		if len(itemSlice) != 2 {
-			return "", fmt.Errorf("invalid key-item pair")
+		if err := kvstore.Set(data); err != nil {
+			return "", fmt.Errorf("Could not write to file: %s", err)
 		}
-		key, val := itemSlice[0], itemSlice[1]
-		if err := kvstore.Set(key, val); err != nil {
-			return "", fmt.Errorf("could not write to JSON file: %s", err)
-		}
-		return fmt.Sprintf("Inserted key: %s and item: %s", key, val), nil
+		return fmt.Sprint("OK\n"), nil
 	case "get":
-		val, err := kvstore.Get(item)
+		val, err := kvstore.Get(data)
 		if err != nil {
-			return "", fmt.Errorf("could not read from JSON file: %s", err)
+			return "", fmt.Errorf("Could not read from file: %s", err)
 		}
 		return val, nil
 	default:
-		return "", fmt.Errorf("unknown instruction")
+		return "", fmt.Errorf("Unknown instruction")
 	}
 }

@@ -5,7 +5,9 @@ import (
 	"net"
 
 	"github.com/chzyer/readline"
+	pb "github.com/omarfq/kvstore/api/v1"
 	"github.com/omarfq/kvstore/internal/utils"
+	"google.golang.org/protobuf/proto"
 )
 
 const SOCKET_PATH = "/tmp/kvstore.sock"
@@ -24,9 +26,23 @@ func main() {
 			break
 		}
 
-		_, _, err = utils.ParseInput(line)
+		operation, key, value, err := utils.ParseInput(line)
 		if err != nil {
 			fmt.Printf("Failed to parse input: %s", err)
+			continue
+		}
+
+		// Create protobuf object
+		command := &pb.Command{
+			Operation: operation,
+			Key:       key,
+			Value:     value,
+		}
+
+		// The out variable is the encoded wire format of `command`
+		out, err := proto.Marshal(command)
+		if err != nil {
+			fmt.Printf("An error occurred while marshalling the input: %s", err)
 			continue
 		}
 
@@ -36,10 +52,9 @@ func main() {
 			fmt.Printf("Failed to connect to server: %s\n", err)
 			continue
 		}
-		fmt.Println("Connected to server succesfully...")
 
 		// Send the instruction and value to the server
-		_, err = conn.Write([]byte(line))
+		_, err = conn.Write(out)
 		if err != nil {
 			fmt.Printf("Failed to send data: %s\n", err)
 			conn.Close()
@@ -55,7 +70,7 @@ func main() {
 			continue
 		}
 
-		fmt.Println("Response from server:", string(response[:n]))
+		fmt.Println(string(response[:n]))
 
 		// Close the connection after the interaction
 		conn.Close()
