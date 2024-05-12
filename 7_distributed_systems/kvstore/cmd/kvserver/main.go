@@ -65,7 +65,7 @@ func readData(conn net.Conn) {
 }
 
 func processInstruction(operation, key, value string) (string, error) {
-	kvstore, err := store.FileKVStoreInstance()
+	kvstore, err := store.KVStoreInit()
 	data := &pb.Data{
 		Key:   key,
 		Value: value,
