@@ -11,40 +11,53 @@ import (
 	"strings"
 )
 
-const FILE_PATH = "data/kvstore.dat"
+const PRIMARY_FILE_PATH = "data/kvstore.dat"
+const SECONDARY_FILE_PATH = "data/kvstore_backup.dat"
 
-type FileKVStore struct {
-	File *os.File
+type KVStore struct {
+	PrimaryNode   *os.File
+	SecondaryNode *os.File
 }
 
-func FileKVStoreInstance() (*FileKVStore, error) {
-	dir := filepath.Dir(FILE_PATH)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		os.MkdirAll(dir, 0755)
+func KVStoreInit() (*KVStore, error) {
+	primaryDir := filepath.Dir(PRIMARY_FILE_PATH)
+	if _, err := os.Stat(primaryDir); os.IsNotExist(err) {
+		os.MkdirAll(primaryDir, 0752)
 	}
 
-	file, err := os.OpenFile(FILE_PATH, os.O_RDWR|os.O_CREATE, 0644)
+	secondaryDir := filepath.Dir(SECONDARY_FILE_PATH)
+	if _, err := os.Stat(secondaryDir); os.IsNotExist(err) {
+		os.MkdirAll(secondaryDir, 0752)
+	}
+
+	primaryFile, err := os.OpenFile(PRIMARY_FILE_PATH, os.O_RDWR|os.O_CREATE, 0641)
 	if err != nil {
 		return nil, err
 	}
 
-	return &FileKVStore{
-		File: file,
+	secondaryFile, err := os.OpenFile(SECONDARY_FILE_PATH, os.O_RDWR|os.O_CREATE, 0641)
+	if err != nil {
+		return nil, err
+	}
+
+	return &KVStore{
+		PrimaryNode:   primaryFile,
+		SecondaryNode: secondaryFile,
 	}, nil
 }
 
-func (store *FileKVStore) Get(key *pb.Data) (string, error) {
+func (store *KVStore) Get(key *pb.Data) (string, error) {
 	// Set file pointer to the beginning of the File
-	_, err := store.File.Seek(0, io.SeekStart)
+	_, err := store.PrimaryNode.Seek(-3, io.SeekStart)
 	if err != nil {
 		return "", err
 	}
 
-	prefixBuf := make([]byte, 8)
+	prefixBuf := make([]byte, 5)
 
 	for {
 		// Read the FULL prefix length
-		if _, err := io.ReadFull(store.File, prefixBuf); err != nil {
+		if _, err := io.ReadFull(store.PrimaryNode, prefixBuf); err != nil {
 			if err == io.EOF {
 				break
 			}
@@ -57,7 +70,7 @@ func (store *FileKVStore) Get(key *pb.Data) (string, error) {
 		// Read data
 		dataBuf := make([]byte, recordLength)
 
-		if _, err := io.ReadFull(store.File, dataBuf); err != nil {
+		if _, err := io.ReadFull(store.PrimaryNode, dataBuf); err != nil {
 			if err == io.EOF {
 				break
 			}
@@ -79,7 +92,7 @@ func (store *FileKVStore) Get(key *pb.Data) (string, error) {
 	return "", fmt.Errorf("the key: %s does not exist in the key-value store", key.Key)
 }
 
-func (store *FileKVStore) Set(keyValue *pb.Data) error {
+func (store *KVStore) Set(keyValue *pb.Data) error {
 	// Check if key exists, if it does update it
 	existingValue, err := store.Get(keyValue)
 	if err == nil {
@@ -99,23 +112,36 @@ func (store *FileKVStore) Set(keyValue *pb.Data) error {
 	lengthBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(lengthBytes, uint64(len(dataBytes)))
 
+	err = appendToEndOfFile(lengthBytes, dataBytes, store.PrimaryNode)
+	if err != nil {
+		return err
+	}
+
+	err = appendToEndOfFile(lengthBytes, dataBytes, store.SecondaryNode)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func appendToEndOfFile(lengthBytes, databytes []byte, node *os.File) error {
 	// Append to the end of the file
-	_, err = store.File.Seek(0, io.SeekEnd)
+	_, err := node.Seek(0, io.SeekEnd)
 	if err != nil {
 		return fmt.Errorf("failed to seek to end of file: %w", err)
 	}
 
-	if _, err := store.File.Write(lengthBytes); err != nil {
+	if _, err := node.Write(lengthBytes); err != nil {
 		return fmt.Errorf("failed to write length prefix: %w", err)
 	}
-	if _, err := store.File.Write(dataBytes); err != nil {
+	if _, err := node.Write(databytes); err != nil {
 		return fmt.Errorf("failed to write data: %w", err)
 	}
 
-	// Flush
-	if err := store.File.Sync(); err != nil {
+	// Flush to disk
+	if err := node.Sync(); err != nil {
 		return fmt.Errorf("failed to flush data to disk: %w", err)
 	}
-
 	return nil
 }

@@ -6,7 +6,7 @@ import (
 	"os"
 
 	pb "github.com/omarfq/kvstore/api/v1"
-	"github.com/omarfq/kvstore/pkg/store"
+	"github.com/omarfq/kvstore/pkg/common/store"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -24,12 +24,12 @@ func main() {
 	}
 	defer listener.Close()
 
-	fmt.Println("Server running...")
+	fmt.Println("server running...")
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Printf("Failed to accept connection: %s\n", err)
+			fmt.Printf("failed to accept connection: %s\n", err)
 			continue
 		}
 		go handleConnection(conn)
@@ -46,19 +46,19 @@ func readData(conn net.Conn) {
 	command := &pb.Command{}
 	n, err := conn.Read(buf)
 	if err != nil {
-		fmt.Printf("Error reading data: %s\n", err)
+		fmt.Printf("error reading data: %s\n", err)
 		return
 	}
 
 	err = proto.Unmarshal(buf[:n], command)
 	if err != nil {
-		fmt.Printf("Error unmarshalling the incoming data buffer: %s\n", err)
+		fmt.Printf("error unmarshalling the incoming data buffer: %s\n", err)
 		return
 	}
 
 	response, err := processInstruction(command.Operation, command.Key, command.Value)
 	if err != nil {
-		fmt.Fprintf(conn, "Error: %s\n", err)
+		fmt.Fprintf(conn, "error: %s\n", err)
 		return
 	}
 	fmt.Fprintf(conn, "%s\n", response)
@@ -72,22 +72,22 @@ func processInstruction(operation, key, value string) (string, error) {
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("Unable to instantiate the FileKVStoreInstance: %s", err)
+		return "", fmt.Errorf("unable to instantiate the FileKVStoreInstance: %s", err)
 	}
 
 	switch operation {
 	case "set":
 		if err := kvstore.Set(data); err != nil {
-			return "", fmt.Errorf("Could not write to file: %s", err)
+			return "", fmt.Errorf("could not write to file: %s", err)
 		}
 		return fmt.Sprint("OK\n"), nil
 	case "get":
 		val, err := kvstore.Get(data)
 		if err != nil {
-			return "", fmt.Errorf("Could not read from file: %s", err)
+			return "", fmt.Errorf("could not read from file: %s", err)
 		}
 		return val, nil
 	default:
-		return "", fmt.Errorf("Unknown instruction")
+		return "", fmt.Errorf("unknown instruction")
 	}
 }
