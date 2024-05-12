@@ -48,12 +48,12 @@ func KVStoreInit() (*KVStore, error) {
 
 func (store *KVStore) Get(key *pb.Data) (string, error) {
 	// Set file pointer to the beginning of the File
-	_, err := store.PrimaryNode.Seek(-3, io.SeekStart)
+	_, err := store.PrimaryNode.Seek(0, io.SeekStart)
 	if err != nil {
 		return "", err
 	}
 
-	prefixBuf := make([]byte, 5)
+	prefixBuf := make([]byte, 8)
 
 	for {
 		// Read the FULL prefix length
