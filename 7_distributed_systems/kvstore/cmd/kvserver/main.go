@@ -6,7 +6,7 @@ import (
 	"os"
 
 	pb "github.com/omarfq/kvstore/api/v1"
-	"github.com/omarfq/kvstore/internal/store"
+	"github.com/omarfq/kvstore/pkg/store"
 	"google.golang.org/protobuf/proto"
 )
 

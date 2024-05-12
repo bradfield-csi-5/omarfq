@@ -1,4 +1,4 @@
-package store
+package common
 
 import (
 	pb "github.com/omarfq/kvstore/api/v1"

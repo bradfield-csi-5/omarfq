@@ -6,7 +6,7 @@ import (
 
 	"github.com/chzyer/readline"
 	pb "github.com/omarfq/kvstore/api/v1"
-	"github.com/omarfq/kvstore/internal/utils"
+	"github.com/omarfq/kvstore/pkg/utils"
 	"google.golang.org/protobuf/proto"
 )
 
