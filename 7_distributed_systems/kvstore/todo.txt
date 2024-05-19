@@ -1,0 +1,10 @@
+Let's start small and break things down...
+
+1. Refactor store methods to decouple leader writes and follower writes.
+    - Modify Set() method to remove the logic that writes to secondary storage (file). ✅
+    - Refactor so that we don't have the names of storage files hardcoded.
+2. Implement a WAL:
+    - Binary encoding format will be the same used for protobufs.
+3. Implement basic logic to manually switch to reading from a follower instead of the leader.
+4. Scale read throughput by reading from multiple locations (load balance requests).
+

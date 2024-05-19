@@ -11,9 +11,13 @@ import (
 	"strings"
 )
 
+// TODO: Remove these
 const PRIMARY_FILE_PATH = "data/kvstore.dat"
 const SECONDARY_FILE_PATH = "data/kvstore_backup.dat"
 
+// TODO: Modify this struct to have: FileName and a bool property that indicates
+// whether it is a leader of follower. It should also include the number of default
+// replicas we want to use.
 type KVStore struct {
 	PrimaryNode   *os.File
 	SecondaryNode *os.File
@@ -114,17 +118,6 @@ func (store *KVStore) Set(keyValue *pb.Data) error {
 
 	primaryErr := appendToEndOfFile(lengthBytes, dataBytes, store.PrimaryNode)
 	if primaryErr != nil {
-		return err
-	}
-
-	secondaryErr := make(chan error)
-
-	go func(lengthBytes, databytes []byte, node *os.File) {
-		err := appendToEndOfFile(lengthBytes, databytes, node)
-		secondaryErr <- err
-	}(lengthBytes, dataBytes, store.SecondaryNode)
-
-	if secondaryErr != nil {
 		return err
 	}
 
