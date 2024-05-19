@@ -39,7 +39,7 @@ func main() {
 			Value:     value,
 		}
 
-		// The out variable is the encoded wire format of `command`
+		// The out variable is the Protobuf encoded wire format of `command`
 		out, err := proto.Marshal(command)
 		if err != nil {
 			fmt.Printf("An error occurred while marshalling the input: %s", err)
