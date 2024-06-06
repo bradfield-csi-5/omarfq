@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	pb "github.com/omarfq/kvstore/api/v1"
+	"github.com/omarfq/kvstore/pkg/common"
 	"google.golang.org/protobuf/proto"
 	"io"
 	"os"
@@ -11,42 +12,45 @@ import (
 	"strings"
 )
 
-// TODO: Remove these
-const PRIMARY_FILE_PATH = "data/kvstore.dat"
-const SECONDARY_FILE_PATH = "data/kvstore_backup.dat"
+const (
+	LeaderFilename = "leader.dat"
+	DataDir        = "data"
+)
 
-// TODO: Modify this struct to have: FileName and a bool property that indicates
-// whether it is a leader of follower. It should also include the number of default
-// replicas we want to use.
 type KVStore struct {
-	PrimaryNode   *os.File
-	SecondaryNode *os.File
+	wal          *WAL
+	LeaderNode   *common.FileStorage
+	ReplicaNodes []*common.FileStorage
 }
 
-func KVStoreInit() (*KVStore, error) {
-	primaryDir := filepath.Dir(PRIMARY_FILE_PATH)
-	if _, err := os.Stat(primaryDir); os.IsNotExist(err) {
-		os.MkdirAll(primaryDir, 0752)
+func NewKvStore() (*KVStore, error) {
+	dataDir := filepath.Dir(DataDir)
+	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
+		os.MkdirAll(dataDir, 0752)
 	}
 
-	secondaryDir := filepath.Dir(SECONDARY_FILE_PATH)
-	if _, err := os.Stat(secondaryDir); os.IsNotExist(err) {
-		os.MkdirAll(secondaryDir, 0752)
-	}
-
-	primaryFile, err := os.OpenFile(PRIMARY_FILE_PATH, os.O_RDWR|os.O_CREATE, 0641)
+	leaderFile, err := os.OpenFile(LeaderFilename, os.O_RDWR|os.O_CREATE, 0641)
 	if err != nil {
 		return nil, err
 	}
 
-	secondaryFile, err := os.OpenFile(SECONDARY_FILE_PATH, os.O_RDWR|os.O_CREATE, 0641)
+	replicaFiles := []string{"r1.dat", "r2.dat", "r3.dat"}
+	for _, replicaFile := range replicaFiles {
+		f, err := os.OpenFile(replicaFile, os.O_RDWR|os.O_CREATE, 0641)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	wal, err := NewWAL()
 	if err != nil {
 		return nil, err
 	}
 
 	return &KVStore{
-		PrimaryNode:   primaryFile,
-		SecondaryNode: secondaryFile,
+		wal:          wal,
+		LeaderNode:   leaderFile,
+		ReplicaNodes: replicaFiles,
 	}, nil
 }
 

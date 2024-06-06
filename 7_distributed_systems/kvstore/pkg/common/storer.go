@@ -1,14 +1,10 @@
 package common
 
-import (
-	pb "github.com/omarfq/kvstore/api/v1"
-)
-
 type Storer interface {
 	// Returns the value by a given key or an error
 	// if the key does not exist
-	Get(key *pb.Data) (string, error)
+	Write(key string) (string, error)
 	// Sets or updates a new key-value pair in the
 	// data store
-	Set(keyValue *pb.Data) error
+	Read(key, value string) error
 }

@@ -1,4 +1,4 @@
-package wal
+package store
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 
 const (
 	WAL_PATH  = "data/kvstore.log"
-	OP_PUT    = 0x01
+	OP_SET    = 0x01
 	OP_DELETE = 0x02
 )
 
@@ -17,7 +17,7 @@ type WAL struct {
 	file *os.File
 }
 
-func InitializeWAL() (*WAL, error) {
+func NewWAL() (*WAL, error) {
 	dir := filepath.Dir(WAL_PATH)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		os.MkdirAll(dir, 0755)
@@ -46,7 +46,7 @@ func (wal *WAL) Write(op byte, key, value []byte) error {
 	if _, err := buf.Write(encodeUint32(uint32(len(key)))); err != nil {
 		return err
 	}
-	if op == OP_PUT {
+	if op == OP_SET {
 		if _, err := buf.Write(encodeUint32(uint32(len(value)))); err != nil {
 			return err
 		}
@@ -55,7 +55,7 @@ func (wal *WAL) Write(op byte, key, value []byte) error {
 	if _, err := buf.Write(key); err != nil {
 		return err
 	}
-	if op == OP_PUT {
+	if op == OP_SET {
 		if _, err := buf.Write(value); err != nil {
 			return err
 		}
@@ -67,6 +67,10 @@ func (wal *WAL) Write(op byte, key, value []byte) error {
 
 	return nil
 }
+
+// TODO: Implement GetNext with iterator pattern for
+// recovering a node from the WAL
+func (wal *WAL) GetNext() {}
 
 func encodeUint32(u uint32) []byte {
 	buf := make([]byte, 4)
