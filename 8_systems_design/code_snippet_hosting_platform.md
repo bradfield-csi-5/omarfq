@@ -59,6 +59,8 @@ Since we have 10s of millions of daily active **readers** let's assume that we'r
 
 `snippet_text` - 10,000 bytes
 
+`snippet_uuid` - 16 bytes when stored as binary format
+
 Total Size per Snippet: Metadata + Snippet Text: 64 bytes + 10,000 bytes = 10,064 bytes (~10 KB)
 
 ### Network and Disk Storage Calculations
