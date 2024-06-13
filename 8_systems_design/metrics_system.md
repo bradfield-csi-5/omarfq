@@ -54,20 +54,18 @@
 ```
 - Total: 36 bytes
 
-## Storage
-Writing all this data to a SQL database is probably not a idea since the DB would require heavy expertise for tuning it for these types of workloads. It is probably the same case with NoSQL DBs. Instead, we can use stores that exist specifically for dealing with time-series data (e.g., [InfluxDB](https://www.influxdata.com/lp/influxdb-database/?utm_source=google&utm_medium=cpc&utm_campaign=Performance_Max_General&utm_content=pmax&utm_source=google&utm_medium=cpc&utm_campaign=&utm_term=&gad_source=1&gclid=Cj0KCQjwsaqzBhDdARIsAK2gqne6T4dmlJD7KHxRfHBz91_cuFBKlRQAJXdT3k5QDXRBBFneXITGK-AaArpCEALw_wcB).
-
-
 ## Calculations
 - Volume: 750,000 data points * 36 bytes = 27,000,000 bytes = 27 MB
 - Hourly storage: 27 MB * 3600 seconds = 97,200 MB = 9.72 GB/hour
 - Daily storage: 9.72 GB/hour * 24 hours = 2,332.8 GB/day = 2.3 TB/day
+
+## Storage
+Writing all this data to a SQL database is probably not a idea since the DB would require heavy expertise for tuning it for these types of workloads. It is probably the same case with NoSQL DBs. Instead, we can use stores that exist specifically for dealing with time-series data (e.g., [InfluxDB](https://www.influxdata.com/lp/influxdb-database/?utm_source=google&utm_medium=cpc&utm_campaign=Performance_Max_General&utm_content=pmax&utm_source=google&utm_medium=cpc&utm_campaign=&utm_term=&gad_source=1&gclid=Cj0KCQjwsaqzBhDdARIsAK2gqne6T4dmlJD7KHxRfHBz91_cuFBKlRQAJXdT3k5QDXRBBFneXITGK-AaArpCEALw_wcB)).
+
 
 ## High-Level Design
 1. Machines, services, and clusters push data to the collector at an interval of 1 second.
 2. The collector then collects all these metrics.
 3. The collector then writes data into the time-series DB.
 4. A service that sits between the DB and the dashboard queries the DB and sends data back to the frontend (dashboard).
-
-
   
