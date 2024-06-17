@@ -81,19 +81,19 @@
 - Total: ~10.22 TB/year
 
 ## Endpoints
-- GET /listings -> Gets all available listings paginated
+- GET `/listings` -> Gets all available listings paginated
   - Optional query parameters. The guest can add the `sort=asc` or `sort=desc` query param to any of the following to sort results:
-    - GET /listings?price_low=<some_number>&price_high=<some_number> -> Gets all listings within a given price range.
-    - GET /listings?date_low=<some_date>&date_high=<some_date> -> Gets all listings that are available for booking within the specified date range.
-    - GET /listings?city=newyork -> Gets all listings filtered by city (works on Map View).
-- GET /user/:user_id: -> Gets a user by id.
-- POST /listing -> Submits a new listing for a host.
-- POST /reserve -> Reserves a place for 5mins.
-- POST /book -> Creates a booking for a place.
-- PUT /listing/price -> Updates the price of a listing.
+    - `GET /listings?price_low=<some_number>&price_high=<some_number>` -> Gets all listings within a given price range.
+    - `GET /listings?date_low=<some_date>&date_high=<some_date>` -> Gets all listings that are available for booking within the specified date range.
+    - `GET /listings?city=newyork` -> Gets all listings filtered by city (works on Map View).
+- `GET /user/:user_id:` -> Gets a user by id.
+- `POST /listing` -> Submits a new listing for a host.
+- `POST /reserve` -> Reserves a place for 5mins.
+- `POST /book` -> Creates a booking for a place.
+- `PUT /listing/price` -> Updates the price of a listing.
   - Optionally, the host can also update the price within a specific date range:
-    - PUT /listing/price?date_low=<some_date>&date_high=<some_date>
-- POST /release -> Releases a listing from being in the `reserved` state.
+    - `PUT /listing/price?date_low=<some_date>&date_high=<some_date>`
+- `POST /release` -> Releases a listing from being in the `reserved` state.
 
 ## What high-level components do we need?
 - CDN: Distributes static content globally to reduce latency.
