@@ -1,4 +1,4 @@
-# Simple AirBnbB
+# Simple Airbnb
 
 ## Requirements Document
 [https://docs.google.com/document/d/1JSi1MHRGs69XnmgkzLpuZuWaO1UZo-NBKP50lv6-qww/edit#heading=h.o1usn3j8q9ik]()
