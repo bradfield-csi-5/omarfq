@@ -81,7 +81,7 @@
 - Total: ~10.22 TB/year
 
 ## Endpoints
-- GET `/listings` -> Gets all available listings paginated
+- `GET /listings` -> Gets all available listings paginated
   - Optional query parameters. The guest can add the `sort=asc` or `sort=desc` query param to any of the following to sort results:
     - `GET /listings?price_low=<some_number>&price_high=<some_number>` -> Gets all listings within a given price range.
     - `GET /listings?date_low=<some_date>&date_high=<some_date>` -> Gets all listings that are available for booking within the specified date range.
