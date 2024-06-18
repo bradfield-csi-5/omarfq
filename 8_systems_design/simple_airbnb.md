@@ -88,12 +88,12 @@
     - `GET /listings?city=newyork` -> Gets all listings filtered by city (works on Map View).
 - `GET /user/:user_id:` -> Gets a user by id.
 - `POST /listing` -> Submits a new listing for a host.
-- `POST /reserve` -> Reserves a place for 5mins.
-- `POST /book` -> Creates a booking for a place.
-- `PUT /listing/price` -> Updates the price of a listing.
+- `POST /listing/:listing_id:/reserve` -> Reserves a place for 5mins.
+- `POST /listing/:listing_id:/book` -> Creates a booking for a place.
+- `PUT /listing/:listing_id:/price` -> Updates the price of a listing.
   - Optionally, the host can also update the price within a specific date range:
-    - `PUT /listing/price?date_low=<some_date>&date_high=<some_date>`
-- `POST /release` -> Releases a listing from being in the `reserved` state.
+    - `PUT /listing/:listing_id:/price?date_low=<some_date>&date_high=<some_date>`
+- `POST /listing/:listing_id:/release` -> Releases a listing from being in the `reserved` state.
 
 ## What high-level components do we need?
 - CDN: Distributes static content globally to reduce latency.
