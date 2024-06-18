@@ -49,7 +49,7 @@
   - listing_id - BIGINT -> 8 bytes
   - happened_at - TIMESTAMP -> 8 bytes
   - expires_at - TIMESTAMP -> 8 bytes
-  - status ENUM('free', 'booked', 'reserved', 'expired') -> 4 bytes
+  - status ENUM('free', 'booked', 'reserved') -> 4 bytes
 - `user`
   - user_id - BIGINT -> 8 bytes (auto-increment) PK
   - name - VARCHAR(255) -> 255 * 4 = 1020 bytes
