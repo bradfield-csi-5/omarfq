@@ -94,6 +94,7 @@
   - Optionally, the host can also update the price within a specific date range:
     - `PUT /listing/:listing_id:/price?date_low=<some_date>&date_high=<some_date>`
 - `POST /listing/:listing_id:/release` -> Releases a listing from being in the `reserved` state.
+- `POST /book` -> Confirm/create a booking.
 - `POST /booking/:booking_id:` -> Send state of booking to backend.
 
 ## What high-level components do we need?
